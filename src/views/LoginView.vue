@@ -194,11 +194,9 @@ async function handleGoogleLogin() {
 }
 
 .login-showcase {
-  padding: 24px 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  border-radius: 32px;
+  justify-content: center;
 }
 
 .login-brand-image-wrap {
@@ -218,14 +216,14 @@ async function handleGoogleLogin() {
 }
 
 .login-showcase__header h1 {
-  margin: 10px 0 0;
-  font-size: clamp(34px, 6vw, 54px);
+  margin: 20px 0 0;
+  font-size: clamp(20px, 6vw, 44px);
   line-height: 0.98;
   letter-spacing: -0.05em;
 }
 
 .login-showcase__header p {
-  margin: 14px 0 0;
+  margin: 34px 0 0;
   max-width: 560px;
   color: rgba(255, 255, 255, 0.76);
 }
@@ -268,6 +266,7 @@ async function handleGoogleLogin() {
 
 .vehicle-card {
   width: 100%;
+  margin: 20px 0;
   padding: 18px;
   border-radius: 26px;
   background: rgba(255, 255, 255, 0.1);
