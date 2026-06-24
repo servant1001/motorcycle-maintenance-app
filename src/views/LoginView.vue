@@ -48,7 +48,7 @@ async function handleGoogleLogin() {
       <article class="login-showcase dark-surface">
         <div class="login-showcase__header">
           <el-tag effect="dark" round class="login-showcase__tag">DriveOne Mobility OS</el-tag>
-          <h1>DriveOne<br>優雅駕馭，智慧管理</h1>
+          <h1>優雅駕馭，智慧管理</h1>
           <p>
             把保養、維修、能源補給、保險與里程資料收進同一個介面。
             不論是汽車、機車、電動機車還是電動汽車，都能用同一套流程整理。
@@ -108,8 +108,15 @@ async function handleGoogleLogin() {
 
       <section class="login-panel app-surface">
         <div class="login-panel__header">
+          <div class="login-brand-image-wrap">
+            <img
+              class="login-brand-image"
+              src="/driveone-login-brand.png"
+              alt="DriveOne 優雅駕馭，智慧管理"
+            />
+          </div>
           <p class="eyebrow">Sign In</p>
-          <h2>{{ mode === 'login' ? '登入 DriveOne' : '建立 DriveOne 帳號' }}</h2>
+          <h2>{{ mode === 'login' ? '登入' : '建立 DriveOne 帳號' }}</h2>
           <p class="section-subtitle">
             {{ mode === 'login' ? '登入後立即查看車況、保養與花費摘要。' : '先建立帳號，開始管理你的每一台車輛。' }}
           </p>
@@ -194,10 +201,26 @@ async function handleGoogleLogin() {
   border-radius: 32px;
 }
 
+.login-brand-image-wrap {
+  padding: 12px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.login-brand-image {
+  width: 100%;
+  display: block;
+  border-radius: 22px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .login-showcase__header h1 {
   margin: 10px 0 0;
   font-size: clamp(34px, 6vw, 54px);
-  line-height: 1.2;
+  line-height: 0.98;
   letter-spacing: -0.05em;
 }
 
@@ -400,6 +423,15 @@ async function handleGoogleLogin() {
 
   .vehicle-card__grid {
     grid-template-columns: 1fr;
+  }
+
+  .login-brand-image-wrap {
+    padding: 8px;
+    border-radius: 22px;
+  }
+
+  .login-brand-image {
+    border-radius: 16px;
   }
 }
 </style>
