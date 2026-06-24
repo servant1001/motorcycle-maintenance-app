@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import VehicleImage from '@/components/VehicleImage.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useFuelStore } from '@/stores/fuelStore'
+import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { useRepairStore } from '@/stores/repairStore'
@@ -16,6 +17,7 @@ const vehicleStore = useVehicleStore()
 const maintenanceStore = useMaintenanceStore()
 const repairStore = useRepairStore()
 const fuelStore = useFuelStore()
+const insuranceStore = useInsuranceStore()
 const reminderStore = useReminderStore()
 
 const drawerOpen = ref(false)
@@ -26,6 +28,7 @@ const navigationItems = [
   { label: '保養', routeName: 'maintenance', icon: 'Tools' },
   { label: '維修', routeName: 'repairs', icon: 'SetUp' },
   { label: '能源', routeName: 'fuel', icon: 'Coin' },
+  { label: '保險', routeName: 'insurance', icon: 'Checked' },
   { label: '保養提醒', routeName: 'reminders', icon: 'Bell' },
   { label: '統計', routeName: 'statistics', icon: 'PieChart' },
 ]
@@ -40,6 +43,7 @@ async function bootstrapData() {
     maintenanceStore.fetchAll(),
     repairStore.fetchAll(),
     fuelStore.fetchAll(),
+    insuranceStore.fetchAll(),
   ])
   await reminderStore.fetchAll()
 }

@@ -4,17 +4,20 @@ import dayjs from 'dayjs'
 import ReminderCard from '@/components/ReminderCard.vue'
 import VehicleImage from '@/components/VehicleImage.vue'
 import { useFuelStore } from '@/stores/fuelStore'
+import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { useRepairStore } from '@/stores/repairStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import { getAverageFuelEfficiency } from '@/utils/fuel'
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format'
+import { getInsuranceStatusLabel, getNearestInsurance } from '@/utils/insurance'
 
 const vehicleStore = useVehicleStore()
 const maintenanceStore = useMaintenanceStore()
 const repairStore = useRepairStore()
 const fuelStore = useFuelStore()
+const insuranceStore = useInsuranceStore()
 const reminderStore = useReminderStore()
 
 const activeVehicleId = computed(() => vehicleStore.activeVehicleId)
@@ -46,6 +49,10 @@ const yearCost = computed(() => {
 const averageFuelEfficiency = computed(() => getAverageFuelEfficiency(activeFuel.value))
 const latestMaintenance = computed(() => activeMaintenance.value[0] ?? null)
 const latestRepair = computed(() => activeRepairs.value[0] ?? null)
+const activeInsurance = computed(() =>
+  insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
+)
+const nearestInsurance = computed(() => getNearestInsurance(activeInsurance.value))
 const heroReminder = computed(() => reminderStore.activeVehicleSummaries[0] ?? null)
 const heroVehicleTitle = computed(() =>
   vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未設定主要機車',
@@ -72,6 +79,10 @@ const statCards = computed(() => [
     label: '最近一次保養',
     value: latestMaintenance.value ? `${latestMaintenance.value.item} / ${formatDate(latestMaintenance.value.date)}` : '尚未建立',
   },
+  {
+    label: '保險狀態',
+    value: nearestInsurance.value ? `${nearestInsurance.value.insuranceType} / ${getInsuranceStatusLabel(nearestInsurance.value)}` : '尚未建立',
+  },
 ])
 
 onMounted(async () => {
@@ -80,6 +91,7 @@ onMounted(async () => {
     maintenanceStore.fetchAll(),
     repairStore.fetchAll(),
     fuelStore.fetchAll(),
+    insuranceStore.fetchAll(),
   ])
   await reminderStore.fetchAll()
 })
@@ -164,6 +176,28 @@ onMounted(async () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section class="soft-panel dashboard-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Insurance Status</p>
+            <h3>保險狀態</h3>
+          </div>
+        </div>
+        <div v-if="nearestInsurance" class="insurance-card" :class="`insurance-card--${nearestInsurance.status}`">
+          <p class="metric-label">保險狀態</p>
+          <strong>{{ nearestInsurance.insuranceType }}</strong>
+          <span>{{ nearestInsurance.companyName }}</span>
+          <span>到期日：{{ formatDate(nearestInsurance.endDate) }}</span>
+          <span>
+            {{ nearestInsurance.remainingDays >= 0 ? `剩餘 ${nearestInsurance.remainingDays} 天` : `已過期 ${Math.abs(nearestInsurance.remainingDays)} 天` }}
+          </span>
+          <el-tag :type="nearestInsurance.status === 'overdue' ? 'danger' : nearestInsurance.status === 'warning' ? 'warning' : 'success'" round>
+            狀態：{{ getInsuranceStatusLabel(nearestInsurance) }}
+          </el-tag>
+        </div>
+        <el-empty v-else description="尚未建立保險資料" />
       </section>
 
       <section class="soft-panel dashboard-panel">
@@ -276,6 +310,36 @@ onMounted(async () => {
   background: #f8fafc;
 }
 
+.insurance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 24px;
+  background: #f8fafc;
+}
+
+.insurance-card strong {
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.insurance-card span {
+  color: var(--ds-text-soft);
+}
+
+.insurance-card--warning {
+  background: rgba(230, 162, 60, 0.10);
+}
+
+.insurance-card--overdue {
+  background: rgba(245, 108, 108, 0.10);
+}
+
+.insurance-card--normal {
+  background: rgba(103, 194, 58, 0.08);
+}
+
 .record-line {
   display: flex;
   flex-direction: column;
@@ -296,7 +360,7 @@ onMounted(async () => {
   }
 
   .dashboard-grid {
-    grid-template-columns: 1.08fr 0.92fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

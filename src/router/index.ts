@@ -4,6 +4,7 @@ import { getFirebaseSetupHint, useAuthStore } from '@/stores/authStore'
 import { pinia } from '@/stores'
 import DashboardView from '@/views/DashboardView.vue'
 import FuelView from '@/views/FuelView.vue'
+import InsuranceView from '@/views/InsuranceView.vue'
 import LoginView from '@/views/LoginView.vue'
 import MaintenanceView from '@/views/MaintenanceView.vue'
 import RemindersView from '@/views/RemindersView.vue'
@@ -34,6 +35,7 @@ export const router = createRouter({
         { path: 'maintenance', name: 'maintenance', component: MaintenanceView },
         { path: 'repairs', name: 'repairs', component: RepairsView },
         { path: 'fuel', name: 'fuel', component: FuelView },
+        { path: 'insurance', name: 'insurance', component: InsuranceView },
         { path: 'reminders', name: 'reminders', component: RemindersView },
         { path: 'statistics', name: 'statistics', component: StatisticsView },
       ],

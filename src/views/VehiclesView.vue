@@ -3,11 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import VehicleForm from '@/components/VehicleForm.vue'
 import VehicleImage from '@/components/VehicleImage.vue'
+import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import type { Vehicle, VehicleInput } from '@/types/vehicle'
 import { formatNumber } from '@/utils/format'
+import { getInsuranceStatusLabel, getNearestInsurance } from '@/utils/insurance'
 
 const vehicleStore = useVehicleStore()
+const insuranceStore = useInsuranceStore()
 const dialogVisible = ref(false)
 const editingVehicle = ref<Vehicle | null>(null)
 const keyword = ref('')
@@ -17,6 +20,16 @@ const filteredVehicles = computed(() =>
     const text = `${vehicle.brand} ${vehicle.model} ${vehicle.plateNumber}`.toLowerCase()
     return text.includes(keyword.value.trim().toLowerCase())
   }),
+)
+
+const nearestInsuranceMap = computed(
+  () =>
+    new Map(
+      vehicleStore.vehicles.map((vehicle) => [
+        vehicle.id,
+        getNearestInsurance(insuranceStore.records.filter((record) => record.vehicleId === vehicle.id)),
+      ]),
+    ),
 )
 
 function openCreate() {
@@ -48,6 +61,7 @@ async function removeVehicle(vehicle: Vehicle) {
 
 onMounted(() => {
   vehicleStore.fetchAll()
+  insuranceStore.fetchAll()
 })
 </script>
 
@@ -94,6 +108,30 @@ onMounted(() => {
           </div>
         </div>
 
+        <div class="vehicle-insurance-block soft-panel">
+          <template v-if="nearestInsuranceMap.get(vehicle.id)">
+            <p class="eyebrow">Insurance</p>
+            <strong>{{ nearestInsuranceMap.get(vehicle.id)?.insuranceType }}</strong>
+            <span class="mobile-record-card__subtitle">
+              {{ nearestInsuranceMap.get(vehicle.id)?.companyName }} ·
+              {{ nearestInsuranceMap.get(vehicle.id)?.remainingDays! >= 0
+                ? `剩餘 ${nearestInsuranceMap.get(vehicle.id)?.remainingDays} 天`
+                : `已過期 ${Math.abs(nearestInsuranceMap.get(vehicle.id)?.remainingDays ?? 0)} 天` }}
+            </span>
+            <el-tag
+              :type="nearestInsuranceMap.get(vehicle.id)?.status === 'overdue' ? 'danger' : nearestInsuranceMap.get(vehicle.id)?.status === 'warning' ? 'warning' : 'success'"
+              round
+            >
+              {{ getInsuranceStatusLabel(nearestInsuranceMap.get(vehicle.id)!) }}
+            </el-tag>
+          </template>
+          <template v-else>
+            <p class="eyebrow">Insurance</p>
+            <strong>尚未建立保險</strong>
+            <span class="mobile-record-card__subtitle">建議補上強制險與第三責任險資料</span>
+          </template>
+        </div>
+
         <div class="mobile-record-card__actions">
           <el-button class="secondary-cta" @click="vehicleStore.chooseActiveVehicle(vehicle.id)">設為主要</el-button>
           <div>
@@ -120,6 +158,15 @@ onMounted(() => {
         <template #default="{ row }">{{ formatNumber(row.currentMileage) }} km</template>
       </el-table-column>
       <el-table-column label="年份" prop="year" min-width="90" />
+      <el-table-column label="保險" min-width="180">
+        <template #default="{ row }">
+          <div v-if="nearestInsuranceMap.get(row.id)" class="table-insurance-summary">
+            <strong>{{ nearestInsuranceMap.get(row.id)?.insuranceType }}</strong>
+            <span>{{ nearestInsuranceMap.get(row.id)?.companyName }}</span>
+          </div>
+          <span v-else class="muted">尚未建立</span>
+        </template>
+      </el-table-column>
       <el-table-column label="主要車輛" min-width="120">
         <template #default="{ row }">
           <el-switch :model-value="vehicleStore.activeVehicleId === row.id" @change="vehicleStore.chooseActiveVehicle(row.id)" />
@@ -144,5 +191,18 @@ onMounted(() => {
 <style scoped>
 .vehicle-card-media {
   margin: -2px -2px 14px;
+}
+
+.vehicle-insurance-block {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.table-insurance-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 </style>
