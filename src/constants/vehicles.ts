@@ -15,9 +15,9 @@ export const VEHICLE_FUEL_TYPE_OPTIONS: Array<{ label: string; value: VehicleFue
 ]
 
 const MAINTENANCE_ITEMS_BY_TYPE: Record<VehicleType, string[]> = {
-  motorcycle: ['機油', '齒輪油', '空濾', '火星塞', '煞車皮', '輪胎', '皮帶', '驗車'],
+  motorcycle: ['機油', '齒輪油', '空濾', '火星塞', '煞車皮', '前輪胎', '後輪胎', '皮帶', '驗車'],
   car: ['機油', '機油芯', '空氣濾芯', '冷氣濾網', '變速箱油', '煞車油', '水箱水', '火星塞', '輪胎', '電瓶', '驗車'],
-  electric_motorcycle: ['電池健康檢查', '煞車皮', '輪胎', '傳動系統', '冷卻系統', '驗車'],
+  electric_motorcycle: ['電池健康檢查', '煞車皮', '前輪胎', '後輪胎', '傳動系統', '冷卻系統', '驗車'],
   electric_car: ['電池健康檢查', '冷卻液', '冷氣濾網', '煞車油', '輪胎', '12V電瓶', '驗車'],
 }
 
@@ -27,7 +27,8 @@ const DEFAULT_REMINDERS_BY_TYPE: Record<VehicleType, Array<{ item: string; inter
     { item: '齒輪油', intervalKm: 3000 },
     { item: '空濾', intervalKm: 5000 },
     { item: '火星塞', intervalKm: 8000 },
-    { item: '皮帶', intervalKm: 15000 },
+    { item: '前輪胎', intervalKm: 15000 },
+    { item: '後輪胎', intervalKm: 15000 },
   ],
   car: [
     { item: '機油', intervalKm: 5000 },
@@ -42,7 +43,8 @@ const DEFAULT_REMINDERS_BY_TYPE: Record<VehicleType, Array<{ item: string; inter
   electric_motorcycle: [
     { item: '電池健康檢查', intervalKm: 5000 },
     { item: '煞車皮', intervalKm: 8000 },
-    { item: '輪胎', intervalKm: 12000 },
+    { item: '前輪胎', intervalKm: 12000 },
+    { item: '後輪胎', intervalKm: 12000 },
     { item: '傳動系統', intervalKm: 10000 },
   ],
   electric_car: [
@@ -61,7 +63,7 @@ export function getVehicleTypeLabel(type?: VehicleType) {
 
 export function getVehicleFuelLabel(type?: VehicleFuelType) {
   const option = VEHICLE_FUEL_TYPE_OPTIONS.find((item) => item.value === type)
-  return option?.label ?? '未設定'
+  return option?.label ?? '未指定'
 }
 
 export function getVehicleTypeIcon(type?: VehicleType) {
@@ -100,11 +102,11 @@ export function getEnergyActionLabel(type?: VehicleType) {
 }
 
 export function getEnergyUnitLabel(type?: VehicleType) {
-  return isElectricVehicle(type) ? '充電度數 kWh' : '公升數 L'
+  return isElectricVehicle(type) ? '充電量 kWh' : '油量 L'
 }
 
 export function getEnergyEfficiencyLabel(type?: VehicleType) {
-  return isElectricVehicle(type) ? '電耗 km/kWh' : '油耗 km/L'
+  return isElectricVehicle(type) ? '平均效率 km/kWh' : '平均油耗 km/L'
 }
 
 export function getEnergySourceOptions(vehicle?: Vehicle) {
