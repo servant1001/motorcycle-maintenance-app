@@ -6,6 +6,7 @@ import {
   setActiveVehicle,
   updateVehicle,
 } from '@/services/vehicleService'
+import { getVehicleTypeLabel } from '@/constants/vehicles'
 import type { Vehicle, VehicleInput } from '@/types/vehicle'
 import { useAuthStore } from './authStore'
 
@@ -19,7 +20,7 @@ export const useVehicleStore = defineStore('vehicles', {
     activeVehicle: (state) => state.vehicles.find((vehicle) => vehicle.id === state.activeVehicleId) ?? null,
     vehicleOptions: (state) =>
       state.vehicles.map((vehicle) => ({
-        label: `${vehicle.brand} ${vehicle.model} (${vehicle.plateNumber})`,
+        label: `${getVehicleTypeLabel(vehicle.vehicleType)} · ${vehicle.brand} ${vehicle.model} (${vehicle.plateNumber})`,
         value: vehicle.id,
       })),
   },

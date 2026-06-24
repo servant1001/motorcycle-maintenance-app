@@ -1,23 +1,29 @@
-# 機車保養維修紀錄系統
+# DriveOne汽機車生活管理平台
 
-這是一個以 Vue 3 + TypeScript + Firebase 建立的機車保養維修紀錄系統，介面風格走 Tesla / Gogoro 式的極簡車輛 App 路線，重點是把車況、花費、提醒與保單資訊整合在同一個 Mobile First 體驗中。
+DriveOne 是一套以 `Vue 3 + TypeScript + Firebase` 建立的車輛管理系統，提供汽車、機車、電動機車與電動汽車共用的保養、維修、能源與保險管理流程。
 
-## 目前功能
+整體 UI 風格以 Tesla / Gogoro 為方向，採用卡片式設計、圓角、柔和陰影與 Mobile First 介面，避免傳統 ERP 式的密集表格體驗。
 
-- Email / Google 登入
-- 路由守衛，未登入不可進入系統
-- 機車管理 CRUD
-- 機車圖片連結與全站圖片顯示
-- 保養紀錄 CRUD
-- 維修紀錄 CRUD
-- 加油紀錄 CRUD
-- 保養提醒規則與到期狀態
-- 保險管理 CRUD
-- Dashboard 基本統計
-- Dashboard 保養提醒與保險提醒
-- 手機卡片式列表與桌機表格並存
+## 功能特色
 
-## 技術組合
+- Email / Google 帳號登入
+- 車輛管理
+  - 支援汽車、機車、電動機車、電動汽車
+  - 支援圖片連結與主要車輛設定
+- 保養紀錄
+  - 依車型切換保養項目
+- 維修紀錄
+- 能源紀錄
+  - 燃油車：加油紀錄
+  - 電動車：充電紀錄
+- 保養提醒
+- 保險管理
+  - 到期前 30 天提醒
+  - 已過期紅色警示
+- Dashboard 總覽
+- 統計頁面
+
+## 技術棧
 
 - Vue 3
 - TypeScript
@@ -30,41 +36,45 @@
 - dayjs
 - ECharts
 
-## 設計系統
+## 車輛架構
 
-全站樣式由以下檔案統一管理：
+本專案已改為 `vehicle-based` 架構，不再限定只能管理機車。
 
-- [design-system.css](C:/Users/serva/Documents/Playground/motorcycle-maintenance-app/src/design-system.css)
-- [style.css](C:/Users/serva/Documents/Playground/motorcycle-maintenance-app/src/style.css)
+### vehicleType
 
-主要設計方向：
+- `motorcycle`：機車
+- `car`：汽車
+- `electric_motorcycle`：電動機車
+- `electric_car`：電動汽車
 
-- 淺灰白背景
-- 白色卡片
-- 大量留白
-- 大圓角
-- 柔和陰影
-- Mobile First
-- Tesla / Gogoro / Apple Health 式的資訊卡片感
+### fuelType
 
-## 專案結構
+- `gasoline`：汽油
+- `diesel`：柴油
+- `hybrid`：油電
+- `electric`：純電
 
-```text
-src/
-  components/      共用元件、Dialog、圖片元件
-  views/           路由頁面
-  stores/          Pinia 狀態管理
-  services/        Firebase Auth / Realtime Database 操作
-  types/           TypeScript 資料型別
-  utils/           格式化與提醒計算工具
-  router/          路由設定
-  design-system.css
-  style.css
+### Vehicle 範例
+
+```json
+{
+  "id": "vehicleId001",
+  "vehicleType": "motorcycle",
+  "plateNumber": "ABC-1234",
+  "brand": "Yamaha",
+  "model": "勁戰六代",
+  "year": 2020,
+  "currentMileage": 25800,
+  "fuelType": "gasoline",
+  "note": "通勤用",
+  "createdAt": 1719200000000,
+  "updatedAt": 1719200000000
+}
 ```
 
-## 主要資料路徑
+## Firebase 資料路徑
 
-所有資料都綁定登入使用者 uid：
+所有資料都儲存在登入使用者自己的 `uid` 節點下：
 
 - `/users/{uid}/vehicles`
 - `/users/{uid}/maintenanceRecords`
@@ -72,29 +82,57 @@ src/
 - `/users/{uid}/fuelRecords`
 - `/users/{uid}/maintenanceRules`
 - `/users/{uid}/insuranceRecords`
+- `/users/{uid}/settings/activeVehicleId`
 
-## 環境設定
+## 專案結構
 
-1. 複製 `.env.example` 為 `.env`
-2. 填入 Firebase 專案參數
-3. 安裝套件並啟動
+```text
+src/
+  components/      共用元件、Dialog、版型、圖片元件
+  views/           頁面元件
+  stores/          Pinia stores
+  services/        Firebase 資料存取封裝
+  constants/       車型、能源、保養項目等常數
+  types/           TypeScript 型別
+  utils/           工具函式
+  router/          路由設定
+  design-system.css
+  style.css
+```
+
+## 本機開發
+
+1. 安裝依賴
 
 ```sh
 npm install
+```
+
+2. 啟動開發伺服器
+
+```sh
 npm run dev
 ```
 
-## Firebase Realtime Database Rules
-
-規則檔在 [database.rules.json](C:/Users/serva/Documents/Playground/motorcycle-maintenance-app/database.rules.json)。
-
-## 建置驗證
+3. 建置正式版
 
 ```sh
 npm run build
 ```
 
-## 目前重要頁面
+## Firebase 設定
+
+請自行建立 Firebase 專案並完成：
+
+- Authentication
+  - Email / Password
+  - Google Sign-in
+- Realtime Database
+- Hosting
+
+前端 Firebase 設定請放在專案對應的設定檔中，並確認 Realtime Database 規則只允許登入使用者讀寫自己的資料。
+
+## 重要畫面
 
 - `LoginView.vue`
 - `DashboardView.vue`
@@ -102,13 +140,38 @@ npm run build
 - `MaintenanceView.vue`
 - `RepairsView.vue`
 - `FuelView.vue`
-- `RemindersView.vue`
 - `InsuranceView.vue`
+- `RemindersView.vue`
+- `StatisticsView.vue`
 
-## 備註
+## 設計規範
 
-- 機車圖片統一使用 `VehicleImage.vue` 處理比例與 fallback
-- 保險提醒規則：
-  - 到期前 30 天顯示橘色提醒
-  - 已過期顯示紅色警示
-- 若後續要加入圖片上傳，建議下一步接 Firebase Storage，而不是只用 URL
+主要設計規範集中在：
+
+- [src/design-system.css](C:\Users\serva\Desktop\motorcycle-maintenance-app\src\design-system.css)
+- [src/style.css](C:\Users\serva\Desktop\motorcycle-maintenance-app\src\style.css)
+
+設計方向：
+
+- 淺灰白背景
+- 白色卡片
+- 科技藍 / 深灰主色
+- 警告橘色
+- 危險紅色
+- 成功綠色
+- 卡片式資訊排列
+- 手機優先
+
+## 驗證與部署
+
+建議部署前先執行：
+
+```sh
+npm run build
+```
+
+若要部署到 Firebase Hosting：
+
+```sh
+firebase deploy
+```

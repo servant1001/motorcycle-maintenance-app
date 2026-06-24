@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { COMMON_MAINTENANCE_ITEMS } from '@/constants/reminders'
+import { getMaintenanceItemsByVehicleType } from '@/constants/vehicles'
 import type { MaintenanceInput, MaintenanceRecord } from '@/types/maintenance'
+import type { Vehicle } from '@/types/vehicle'
 
 const props = defineProps<{
   modelValue: boolean
   editingRecord?: MaintenanceRecord | null
   vehicleOptions: Array<{ label: string; value: string }>
+  vehicles: Vehicle[]
 }>()
 
 const emit = defineEmits<{
@@ -27,22 +29,34 @@ const form = reactive<MaintenanceInput>({
 })
 
 const rules: FormRules<MaintenanceInput> = {
-  vehicleId: [{ required: true, message: '請選擇機車', trigger: 'change' }],
+  vehicleId: [{ required: true, message: '請選擇車輛', trigger: 'change' }],
   date: [{ required: true, message: '請選擇日期', trigger: 'change' }],
   item: [{ required: true, message: '請選擇保養項目', trigger: 'change' }],
   mileage: [{ required: true, message: '請輸入里程', trigger: 'change' }],
   cost: [{ required: true, message: '請輸入金額', trigger: 'change' }],
 }
 
+const currentVehicle = computed(() => props.vehicles.find((vehicle) => vehicle.id === form.vehicleId))
+const itemOptions = computed(() => getMaintenanceItemsByVehicleType(currentVehicle.value?.vehicleType))
+
 function resetForm() {
   form.vehicleId = props.editingRecord?.vehicleId ?? props.vehicleOptions[0]?.value ?? ''
   form.date = props.editingRecord?.date ?? ''
   form.mileage = props.editingRecord?.mileage ?? 0
-  form.item = props.editingRecord?.item ?? '機油'
+  form.item = props.editingRecord?.item ?? itemOptions.value[0] ?? '機油'
   form.cost = props.editingRecord?.cost ?? 0
   form.shopName = props.editingRecord?.shopName ?? ''
   form.note = props.editingRecord?.note ?? ''
 }
+
+watch(
+  () => form.vehicleId,
+  () => {
+    if (!itemOptions.value.includes(form.item)) {
+      form.item = itemOptions.value[0] ?? ''
+    }
+  },
+)
 
 watch(
   () => [props.modelValue, props.editingRecord, props.vehicleOptions],
@@ -67,8 +81,8 @@ async function handleSubmit() {
     @close="emit('update:modelValue', false)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item label="機車" prop="vehicleId">
-        <el-select v-model="form.vehicleId" placeholder="選擇機車">
+      <el-form-item label="車輛" prop="vehicleId">
+        <el-select v-model="form.vehicleId" placeholder="選擇車輛">
           <el-option v-for="option in vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </el-form-item>
@@ -82,7 +96,7 @@ async function handleSubmit() {
         <el-col :xs="24" :sm="12">
           <el-form-item label="保養項目" prop="item">
             <el-select v-model="form.item">
-              <el-option v-for="item in COMMON_MAINTENANCE_ITEMS" :key="item" :label="item" :value="item" />
+              <el-option v-for="item in itemOptions" :key="item" :label="item" :value="item" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -101,7 +115,7 @@ async function handleSubmit() {
         </el-col>
       </el-row>
 
-      <el-form-item label="店家">
+      <el-form-item label="保養廠 / 店家">
         <el-input v-model="form.shopName" />
       </el-form-item>
 

@@ -29,12 +29,12 @@ const form = reactive<InsuranceInput>({
 })
 
 const rules: FormRules<InsuranceInput> = {
-  vehicleId: [{ required: true, message: '請選擇機車', trigger: 'change' }],
+  vehicleId: [{ required: true, message: '請選擇車輛', trigger: 'change' }],
   insuranceType: [{ required: true, message: '請輸入保險類型', trigger: 'blur' }],
   companyName: [{ required: true, message: '請輸入保險公司', trigger: 'blur' }],
   policyNumber: [{ required: true, message: '請輸入保單號碼', trigger: 'blur' }],
-  startDate: [{ required: true, message: '請選擇起保日', trigger: 'change' }],
-  endDate: [{ required: true, message: '請選擇到期日', trigger: 'change' }],
+  startDate: [{ required: true, message: '請選擇開始日期', trigger: 'change' }],
+  endDate: [{ required: true, message: '請選擇到期日期', trigger: 'change' }],
   premium: [{ required: true, message: '請輸入保費', trigger: 'change' }],
 }
 
@@ -78,7 +78,7 @@ async function handleSubmit() {
     @close="emit('update:modelValue', false)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item label="機車" prop="vehicleId">
+      <el-form-item label="車輛" prop="vehicleId">
         <el-select v-model="form.vehicleId">
           <el-option v-for="option in vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
@@ -87,7 +87,7 @@ async function handleSubmit() {
       <el-row :gutter="12">
         <el-col :xs="24" :sm="12">
           <el-form-item label="保險類型" prop="insuranceType">
-            <el-input v-model="form.insuranceType" placeholder="例如：強制險" />
+            <el-input v-model="form.insuranceType" placeholder="例如：強制險、第三責任險" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="12">

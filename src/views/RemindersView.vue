@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ReminderCard from '@/components/ReminderCard.vue'
+import { getMaintenanceItemsByVehicleType } from '@/constants/vehicles'
 import { useReminderStore } from '@/stores/reminderStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import type { MaintenanceRule, MaintenanceRuleInput } from '@/types/reminder'
@@ -21,10 +22,12 @@ const form = reactive<MaintenanceRuleInput>({
 })
 
 const currentRules = computed(() => reminderStore.activeVehicleRules)
+const selectedVehicle = computed(() => vehicleStore.vehicles.find((vehicle) => vehicle.id === form.vehicleId) ?? null)
+const itemOptions = computed(() => getMaintenanceItemsByVehicleType(selectedVehicle.value?.vehicleType))
 
 function resetForm() {
   form.vehicleId = editingRule.value?.vehicleId ?? vehicleStore.activeVehicleId ?? vehicleStore.vehicleOptions[0]?.value ?? ''
-  form.item = editingRule.value?.item ?? ''
+  form.item = editingRule.value?.item ?? itemOptions.value[0] ?? ''
   form.intervalKm = editingRule.value?.intervalKm ?? 1000
   form.lastMileage = editingRule.value?.lastMileage ?? vehicleStore.activeVehicle?.currentMileage ?? 0
   form.nextMileage = editingRule.value?.nextMileage ?? form.lastMileage + form.intervalKm
@@ -45,9 +48,10 @@ function openEdit(rule: MaintenanceRule) {
 
 async function saveRule() {
   if (!form.vehicleId || !form.item) {
-    ElMessage.warning('請完整填寫提醒規則')
+    ElMessage.warning('請完整填寫車輛與保養項目')
     return
   }
+
   if (editingRule.value) {
     await reminderStore.update(editingRule.value.id, { ...form })
     ElMessage.success('提醒規則已更新')
@@ -59,7 +63,7 @@ async function saveRule() {
 }
 
 async function removeRule(rule: MaintenanceRule) {
-  await ElMessageBox.confirm(`確定刪除提醒項目 ${rule.item} 嗎？`, '刪除確認', { type: 'warning' })
+  await ElMessageBox.confirm(`確定刪除 ${rule.item} 的提醒規則嗎？`, '刪除確認', { type: 'warning' })
   await reminderStore.remove(rule.id)
   ElMessage.success('提醒規則已刪除')
 }
@@ -75,13 +79,13 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>保養提醒</h1>
-        <p>依照里程設定規則，掌握即將到期或已超過的項目。</p>
+        <p>依照車輛類型設定保養週期，讓 Dashboard 與提醒卡片即時顯示剩餘里程。</p>
       </div>
       <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.activeVehicleId" @click="openCreate">新增提醒規則</el-button>
     </div>
 
     <div v-if="!vehicleStore.activeVehicleId">
-      <el-empty description="請先新增機車並設定主要車輛" />
+      <el-empty description="請先新增車輛並設定主要車輛" />
     </div>
 
     <div v-else class="section-stack">
@@ -110,17 +114,19 @@ onMounted(async () => {
 
     <el-dialog v-model="dialogVisible" :title="editingRule ? '編輯提醒規則' : '新增提醒規則'" width="520px">
       <el-form label-position="top">
-        <el-form-item label="機車">
+        <el-form-item label="車輛">
           <el-select v-model="form.vehicleId">
             <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="項目">
-          <el-input v-model="form.item" />
+        <el-form-item label="保養項目">
+          <el-select v-model="form.item">
+            <el-option v-for="item in itemOptions" :key="item" :label="item" :value="item" />
+          </el-select>
         </el-form-item>
         <el-row :gutter="12">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="週期公里數">
+            <el-form-item label="週期（公里）">
               <el-input-number v-model="form.intervalKm" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>

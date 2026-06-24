@@ -2,19 +2,31 @@
 
 ## Project Overview
 
-這是一個以 Vue 3 + TypeScript + Firebase Realtime Database 建立的機車保養維修紀錄系統，UI 風格走 Tesla / Gogoro 式的極簡車輛 App 路線，而不是傳統 ERP 後台。
+`DriveOne汽機車生活管理平台` 是一套以 `Vue 3 + TypeScript + Firebase Realtime Database` 建立的車輛生活管理系統。
 
-目前已完成：
+系統已從早期的 `motorcycle-only` 架構，調整為 `vehicle-based` 架構，現在可同時支援：
+
+- 汽車 `car`
+- 機車 `motorcycle`
+- 電動汽車 `electric_car`
+- 電動機車 `electric_motorcycle`
+
+所有資料皆以 `vehicleId` 關聯，設計目標是支援多車管理、保養與維修追蹤、能源補給紀錄、保險提醒與行動裝置優先的使用體驗。
+
+## Core Features
 
 - Email / Google 登入
-- 機車管理
-- 保養紀錄
-- 維修紀錄
-- 加油紀錄
-- 保養提醒
-- 保險管理
-- Dashboard 統計與提醒
-- Mobile First 卡片式介面
+- 車輛管理 CRUD
+- 保養紀錄 CRUD
+- 維修紀錄 CRUD
+- 能源紀錄 CRUD
+  - 燃油車顯示為加油紀錄
+  - 電動車顯示為充電紀錄
+- 保養提醒規則 CRUD
+- 保險管理 CRUD
+- Dashboard 總覽
+- 統計頁面
+- Mobile First RWD
 
 ## Tech Stack
 
@@ -27,29 +39,81 @@
 - Firebase Authentication
 - Firebase Realtime Database
 - dayjs
+- ECharts
 
 ## Source Layout
 
 - `src/components`
-  - 共用元件，例如 `AppLayout.vue`、`VehicleImage.vue`、各種表單 Dialog
+  - 共用 UI 元件、表單 Dialog、版型與圖片元件
+  - 重要元件包含 `AppLayout.vue`、`VehicleImage.vue`
 - `src/views`
-  - 路由頁面，例如 Dashboard、車庫、保險管理
+  - 各功能頁面
+  - 目前包含 `Dashboard / Vehicles / Maintenance / Repairs / Fuel / Insurance / Reminders / Statistics / Login`
 - `src/stores`
-  - Pinia 狀態管理，每個模組一個 store
+  - Pinia 狀態管理
+  - 各資料模組各自有 store
 - `src/services`
-  - Firebase Realtime Database / Auth 的資料讀寫封裝
+  - Firebase Auth 與 Realtime Database 存取封裝
 - `src/types`
-  - 所有主資料型別
+  - TypeScript 型別定義
 - `src/utils`
-  - 顯示格式、油耗計算、保險提醒等純函式
+  - 格式化、保險計算、能源效率等工具函式
+- `src/constants`
+  - 車輛類型、能源型態、保養項目、預設提醒週期等常數
 - `src/design-system.css`
-  - 全站設計 token 與共用視覺規範
+  - 全站設計規範與 design tokens
 - `src/style.css`
-  - 全站共用版型、卡片、表格、手機卡片列表樣式
+  - 全域樣式補充
 
-## Data Rules
+## Key Domain Rules
 
-所有資料都必須綁定登入使用者 uid，路徑位於：
+### Vehicle Model
+
+`vehicles` 現在使用以下核心欄位：
+
+- `vehicleType`
+  - `motorcycle`
+  - `car`
+  - `electric_motorcycle`
+  - `electric_car`
+- `fuelType`
+  - `gasoline`
+  - `diesel`
+  - `hybrid`
+  - `electric`
+
+其他資料如 `plateNumber`、`brand`、`model`、`year`、`currentMileage`、`imageUrl`、`note` 仍保留。
+
+### Maintenance Items
+
+保養項目需依 `vehicleType` 動態切換，不可再寫死為機車版本。
+
+- 機車：機油、齒輪油、空濾、火星塞、煞車皮、輪胎、皮帶、驗車
+- 汽車：機油、機油芯、空氣濾芯、冷氣濾網、變速箱油、煞車油、水箱水、火星塞、輪胎、電瓶、驗車
+- 電動車：使用對應的電池、冷卻、輪胎、煞車與系統檢查項目
+
+### Energy Records
+
+- 燃油車：顯示為「加油紀錄」
+- 電動車：顯示為「充電紀錄」
+- 能源來源選項與效率單位必須依車型調整
+  - 燃油車：`km/L`
+  - 電動車：`km/kWh`
+
+### Insurance Records
+
+保險資料綁定：
+
+- `/users/{uid}/insuranceRecords/{insuranceId}`
+
+提醒規則：
+
+- 到期前 30 天顯示警告
+- 已過期顯示紅色狀態
+
+## Firebase Data Paths
+
+所有資料都放在使用者自己的 `uid` 節點下：
 
 - `/users/{uid}/vehicles`
 - `/users/{uid}/maintenanceRecords`
@@ -57,38 +121,48 @@
 - `/users/{uid}/fuelRecords`
 - `/users/{uid}/maintenanceRules`
 - `/users/{uid}/insuranceRecords`
+- `/users/{uid}/settings/activeVehicleId`
 
-新增資料時使用 Firebase `push()` 產生 id。
+建立新資料時優先使用 Firebase `push()` 產生 id。
 
 ## UI / UX Rules
 
-- 保持 Tesla / Gogoro / Apple Health 風格
-- 優先 Mobile First
-- 手機版列表優先使用卡片，而不是密集表格
-- 桌機版可保留表格，但避免傳統管理後台視覺
-- 使用 `design-system.css` 中的變數，不要隨意新增零散顏色
-- 圖片顯示優先走 `VehicleImage.vue`，避免各頁各自處理比例與 fallback
+- 延續 Tesla / Gogoro / Apple Health 風格
+- Mobile First
+- 優先使用卡片而不是密集表格
+- 大量留白、圓角、柔和陰影
+- 全站樣式以 `design-system.css` 為準
+- 車輛圖片統一透過 `VehicleImage.vue` 顯示，避免 broken image 直接露出
 
 ## When Editing
 
-- 新功能若是獨立資料模組，優先同步新增：
-  - `types`
-  - `services`
-  - `stores`
-  - `views`
-  - 對應 `Dashboard` 提醒或摘要
-- 若涉及機車圖片，使用 `VehicleImage.vue`
-- 若涉及日期提醒，請在 `utils` 建立純函式，不要把邏輯散在模板裡
-- 若新增頁面，記得同步：
-  - `router/index.ts`
-  - `components/AppLayout.vue` 導覽
+- 若修改車輛欄位，通常要一起檢查：
+  - `src/types`
+  - `src/services`
+  - `src/stores`
+  - `src/views`
+  - `Dashboard` 與相關表單
+- 若修改能源相關邏輯，要同步檢查：
+  - `FuelView.vue`
+  - `FuelForm.vue`
+  - `src/utils/fuel.ts`
+  - `src/constants/vehicles.ts`
+- 若新增新的車種規則，不要只改 UI，必須一併檢查：
+  - 保養項目
+  - 提醒週期
+  - 能源文案
+  - 統計與 Dashboard 顯示
 
 ## Verification
 
-修改後至少執行：
+提交前至少執行：
 
 ```sh
 npm run build
 ```
 
-若 build 成功，再同步桌面專案版本。
+如果要驗證部署版本，再執行：
+
+```sh
+firebase deploy
+```

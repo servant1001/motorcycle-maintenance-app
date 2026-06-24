@@ -1,5 +1,5 @@
 import { get, push, remove, set, update } from 'firebase/database'
-import { DEFAULT_REMINDER_INTERVALS } from '@/constants/reminders'
+import { getDefaultReminderIntervalsByVehicleType } from '@/constants/reminders'
 import type { MaintenanceRule, MaintenanceRuleInput } from '@/types/reminder'
 import type { Vehicle } from '@/types/vehicle'
 import { userRef } from './firebase'
@@ -44,7 +44,7 @@ export async function seedDefaultMaintenanceRules(uid: string, vehicle: Vehicle)
   if (vehicleRules.length > 0) return
 
   await Promise.all(
-    DEFAULT_REMINDER_INTERVALS.map((item) =>
+    getDefaultReminderIntervalsByVehicleType(vehicle.vehicleType).map((item) =>
       createMaintenanceRule(uid, {
         vehicleId: vehicle.id,
         item: item.item,

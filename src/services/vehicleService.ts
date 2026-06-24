@@ -7,13 +7,28 @@ function fromSnapshot<T>(snapshotValue: Record<string, Omit<T, 'id'>> | null) {
   return Object.entries(snapshotValue).map(([id, value]) => ({ id, ...value })) as T[]
 }
 
+function normalizeVehicle(vehicle: Vehicle): Vehicle {
+  const isElectric = vehicle.vehicleType?.includes('electric') || vehicle.fuelType === 'electric'
+
+  return {
+    ...vehicle,
+    vehicleType: vehicle.vehicleType ?? (isElectric ? 'electric_motorcycle' : 'motorcycle'),
+    fuelType: vehicle.fuelType ?? (isElectric ? 'electric' : 'gasoline'),
+    imageUrl: vehicle.imageUrl ?? '',
+    note: vehicle.note ?? '',
+  }
+}
+
 export async function fetchVehicles(uid: string) {
   const [vehiclesSnapshot, activeVehicleSnapshot] = await Promise.all([
     get(userRef(uid, 'vehicles')),
     get(userRef(uid, 'settings/activeVehicleId')),
   ])
 
-  const vehicles = fromSnapshot<Vehicle>(vehiclesSnapshot.val()).sort((a, b) => b.updatedAt - a.updatedAt)
+  const vehicles = fromSnapshot<Vehicle>(vehiclesSnapshot.val())
+    .map(normalizeVehicle)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+
   return {
     vehicles,
     activeVehicleId: activeVehicleSnapshot.exists() ? activeVehicleSnapshot.val() : null,
@@ -26,6 +41,8 @@ export async function createVehicle(uid: string, payload: VehicleInput) {
   const vehicle: Omit<Vehicle, 'id'> = {
     ...payload,
     imageUrl: payload.imageUrl?.trim() || '',
+    vehicleType: payload.vehicleType,
+    fuelType: payload.fuelType,
     year: payload.year || undefined,
     note: payload.note?.trim() || '',
     createdAt: now,
@@ -40,6 +57,8 @@ export async function updateVehicle(uid: string, id: string, payload: VehicleInp
   await update(userRef(uid, `vehicles/${id}`), {
     ...payload,
     imageUrl: payload.imageUrl?.trim() || '',
+    vehicleType: payload.vehicleType,
+    fuelType: payload.fuelType,
     year: payload.year || undefined,
     note: payload.note?.trim() || '',
     updatedAt: Date.now(),

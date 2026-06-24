@@ -27,9 +27,9 @@ const form = reactive<RepairInput>({
 })
 
 const rules: FormRules<RepairInput> = {
-  vehicleId: [{ required: true, message: '請選擇機車', trigger: 'change' }],
+  vehicleId: [{ required: true, message: '請選擇車輛', trigger: 'change' }],
   date: [{ required: true, message: '請選擇日期', trigger: 'change' }],
-  problem: [{ required: true, message: '請輸入故障問題', trigger: 'blur' }],
+  problem: [{ required: true, message: '請輸入問題描述', trigger: 'blur' }],
   repairContent: [{ required: true, message: '請輸入維修內容', trigger: 'blur' }],
   mileage: [{ required: true, message: '請輸入里程', trigger: 'change' }],
   cost: [{ required: true, message: '請輸入金額', trigger: 'change' }],
@@ -69,8 +69,8 @@ async function handleSubmit() {
     @close="emit('update:modelValue', false)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item label="機車" prop="vehicleId">
-        <el-select v-model="form.vehicleId" placeholder="選擇機車">
+      <el-form-item label="車輛" prop="vehicleId">
+        <el-select v-model="form.vehicleId" placeholder="選擇車輛">
           <el-option v-for="option in vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </el-form-item>
@@ -88,7 +88,7 @@ async function handleSubmit() {
         </el-col>
       </el-row>
 
-      <el-form-item label="故障問題" prop="problem">
+      <el-form-item label="問題描述" prop="problem">
         <el-input v-model="form.problem" />
       </el-form-item>
 
@@ -103,7 +103,7 @@ async function handleSubmit() {
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="12">
-          <el-form-item label="店家">
+          <el-form-item label="維修廠 / 店家">
             <el-input v-model="form.shopName" />
           </el-form-item>
         </el-col>

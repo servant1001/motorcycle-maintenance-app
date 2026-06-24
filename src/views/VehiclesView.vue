@@ -3,6 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import VehicleForm from '@/components/VehicleForm.vue'
 import VehicleImage from '@/components/VehicleImage.vue'
+import {
+  getVehicleFuelLabel,
+  getVehicleTypeIcon,
+  getVehicleTypeLabel,
+} from '@/constants/vehicles'
 import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import type { Vehicle, VehicleInput } from '@/types/vehicle'
@@ -17,7 +22,16 @@ const keyword = ref('')
 
 const filteredVehicles = computed(() =>
   vehicleStore.vehicles.filter((vehicle) => {
-    const text = `${vehicle.brand} ${vehicle.model} ${vehicle.plateNumber}`.toLowerCase()
+    const text = [
+      vehicle.brand,
+      vehicle.model,
+      vehicle.plateNumber,
+      getVehicleTypeLabel(vehicle.vehicleType),
+      getVehicleFuelLabel(vehicle.fuelType),
+    ]
+      .join(' ')
+      .toLowerCase()
+
     return text.includes(keyword.value.trim().toLowerCase())
   }),
 )
@@ -45,18 +59,18 @@ function openEdit(vehicle: Vehicle) {
 async function submitVehicle(payload: VehicleInput) {
   if (editingVehicle.value) {
     await vehicleStore.update(editingVehicle.value.id, payload)
-    ElMessage.success('機車資料已更新')
+    ElMessage.success('車輛資料已更新')
   } else {
     await vehicleStore.create(payload)
-    ElMessage.success('機車已新增')
+    ElMessage.success('車輛已新增')
   }
   dialogVisible.value = false
 }
 
 async function removeVehicle(vehicle: Vehicle) {
-  await ElMessageBox.confirm(`確定刪除 ${vehicle.plateNumber} 嗎？`, '刪除確認', { type: 'warning' })
+  await ElMessageBox.confirm(`確定刪除 ${vehicle.plateNumber} 這台車輛嗎？`, '刪除確認', { type: 'warning' })
   await vehicleStore.remove(vehicle.id)
-  ElMessage.success('機車已刪除')
+  ElMessage.success('車輛已刪除')
 }
 
 onMounted(() => {
@@ -69,14 +83,14 @@ onMounted(() => {
   <section class="page-shell section-stack">
     <div class="page-header">
       <div>
-        <h1>機車管理</h1>
-        <p>管理你的車輛清單，並指定目前主要使用的車輛。</p>
+        <h1>車輛管理</h1>
+        <p>集中管理汽車、機車與電動車，設定主要車輛並快速查看保險狀態。</p>
       </div>
-      <el-button type="warning" class="primary-cta" @click="openCreate">新增機車</el-button>
+      <el-button type="warning" class="primary-cta" @click="openCreate">新增車輛</el-button>
     </div>
 
     <div class="toolbar">
-      <el-input v-model="keyword" placeholder="搜尋品牌 / 車型 / 車牌" clearable>
+      <el-input v-model="keyword" placeholder="搜尋品牌、車型、車牌或類型" clearable>
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
     </div>
@@ -88,12 +102,12 @@ onMounted(() => {
         </div>
         <div class="mobile-record-card__top">
           <div>
-            <p class="eyebrow">{{ vehicle.brand }}</p>
-            <h3 class="mobile-record-card__title">{{ vehicle.model }}</h3>
-            <p class="mobile-record-card__subtitle">{{ vehicle.plateNumber }}</p>
+            <p class="eyebrow">{{ getVehicleTypeIcon(vehicle.vehicleType) }} {{ getVehicleTypeLabel(vehicle.vehicleType) }}</p>
+            <h3 class="mobile-record-card__title">{{ vehicle.brand }} {{ vehicle.model }}</h3>
+            <p class="mobile-record-card__subtitle">{{ vehicle.plateNumber }} · {{ getVehicleFuelLabel(vehicle.fuelType) }}</p>
           </div>
           <el-tag :type="vehicleStore.activeVehicleId === vehicle.id ? 'primary' : 'info'" round>
-            {{ vehicleStore.activeVehicleId === vehicle.id ? '主要車輛' : '一般車輛' }}
+            {{ vehicleStore.activeVehicleId === vehicle.id ? '主要車輛' : '可設為主要' }}
           </el-tag>
         </div>
 
@@ -116,7 +130,7 @@ onMounted(() => {
               {{ nearestInsuranceMap.get(vehicle.id)?.companyName }} ·
               {{ nearestInsuranceMap.get(vehicle.id)?.remainingDays! >= 0
                 ? `剩餘 ${nearestInsuranceMap.get(vehicle.id)?.remainingDays} 天`
-                : `已過期 ${Math.abs(nearestInsuranceMap.get(vehicle.id)?.remainingDays ?? 0)} 天` }}
+                : `已逾期 ${Math.abs(nearestInsuranceMap.get(vehicle.id)?.remainingDays ?? 0)} 天` }}
             </span>
             <el-tag
               :type="nearestInsuranceMap.get(vehicle.id)?.status === 'overdue' ? 'danger' : nearestInsuranceMap.get(vehicle.id)?.status === 'warning' ? 'warning' : 'success'"
@@ -127,13 +141,13 @@ onMounted(() => {
           </template>
           <template v-else>
             <p class="eyebrow">Insurance</p>
-            <strong>尚未建立保險</strong>
-            <span class="mobile-record-card__subtitle">建議補上強制險與第三責任險資料</span>
+            <strong>尚未建立保單</strong>
+            <span class="mobile-record-card__subtitle">新增保險資料後，這裡會顯示到期提醒。</span>
           </template>
         </div>
 
         <div class="mobile-record-card__actions">
-          <el-button class="secondary-cta" @click="vehicleStore.chooseActiveVehicle(vehicle.id)">設為主要</el-button>
+          <el-button class="secondary-cta" @click="vehicleStore.chooseActiveVehicle(vehicle.id)">設為主要車輛</el-button>
           <div>
             <el-button class="secondary-cta" @click="openEdit(vehicle)">編輯</el-button>
             <el-button class="secondary-cta" type="danger" plain @click="removeVehicle(vehicle)">刪除</el-button>
@@ -148,23 +162,31 @@ onMounted(() => {
           <VehicleImage :src="row.imageUrl" :alt="`${row.brand} ${row.model}`" variant="thumb" />
         </template>
       </el-table-column>
+      <el-table-column label="車輛類型" min-width="130">
+        <template #default="{ row }">
+          {{ getVehicleTypeIcon(row.vehicleType) }} {{ getVehicleTypeLabel(row.vehicleType) }}
+        </template>
+      </el-table-column>
       <el-table-column label="車牌" prop="plateNumber" min-width="120" />
       <el-table-column label="品牌 / 車型" min-width="180">
         <template #default="{ row }">
           {{ row.brand }} {{ row.model }}
         </template>
       </el-table-column>
+      <el-table-column label="能源型態" min-width="120">
+        <template #default="{ row }">{{ getVehicleFuelLabel(row.fuelType) }}</template>
+      </el-table-column>
       <el-table-column label="里程" min-width="120">
         <template #default="{ row }">{{ formatNumber(row.currentMileage) }} km</template>
       </el-table-column>
       <el-table-column label="年份" prop="year" min-width="90" />
-      <el-table-column label="保險" min-width="180">
+      <el-table-column label="保險狀態" min-width="180">
         <template #default="{ row }">
           <div v-if="nearestInsuranceMap.get(row.id)" class="table-insurance-summary">
             <strong>{{ nearestInsuranceMap.get(row.id)?.insuranceType }}</strong>
             <span>{{ nearestInsuranceMap.get(row.id)?.companyName }}</span>
           </div>
-          <span v-else class="muted">尚未建立</span>
+          <span v-else class="muted">尚未建立保單</span>
         </template>
       </el-table-column>
       <el-table-column label="主要車輛" min-width="120">

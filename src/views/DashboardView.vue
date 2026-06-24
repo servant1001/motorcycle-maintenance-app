@@ -3,6 +3,11 @@ import { computed, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import ReminderCard from '@/components/ReminderCard.vue'
 import VehicleImage from '@/components/VehicleImage.vue'
+import {
+  getEnergyEfficiencyLabel,
+  getVehicleTypeIcon,
+  getVehicleTypeLabel,
+} from '@/constants/vehicles'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
@@ -21,12 +26,16 @@ const insuranceStore = useInsuranceStore()
 const reminderStore = useReminderStore()
 
 const activeVehicleId = computed(() => vehicleStore.activeVehicleId)
+const activeVehicle = computed(() => vehicleStore.activeVehicle)
 
 const activeMaintenance = computed(() =>
   maintenanceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 )
 const activeRepairs = computed(() => repairStore.records.filter((record) => record.vehicleId === activeVehicleId.value))
 const activeFuel = computed(() => fuelStore.records.filter((record) => record.vehicleId === activeVehicleId.value))
+const activeInsurance = computed(() =>
+  insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
+)
 
 function getRecordCost(record: { cost?: number; amount?: number }) {
   return record.cost ?? record.amount ?? 0
@@ -49,31 +58,30 @@ const yearCost = computed(() => {
 const averageFuelEfficiency = computed(() => getAverageFuelEfficiency(activeFuel.value))
 const latestMaintenance = computed(() => activeMaintenance.value[0] ?? null)
 const latestRepair = computed(() => activeRepairs.value[0] ?? null)
-const activeInsurance = computed(() =>
-  insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
-)
 const nearestInsurance = computed(() => getNearestInsurance(activeInsurance.value))
 const heroReminder = computed(() => reminderStore.activeVehicleSummaries[0] ?? null)
 const heroVehicleTitle = computed(() =>
-  vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未設定主要機車',
+  activeVehicle.value ? `${activeVehicle.value.brand} ${activeVehicle.value.model}` : '尚未設定主要車輛',
 )
 
 const statCards = computed(() => [
   {
     label: '目前里程',
-    value: vehicleStore.activeVehicle ? `${formatNumber(vehicleStore.activeVehicle.currentMileage)} km` : '-',
+    value: activeVehicle.value ? `${formatNumber(activeVehicle.value.currentMileage)} km` : '-',
   },
   {
-    label: '本月總花費',
+    label: '本月花費',
     value: formatCurrency(monthCost.value),
   },
   {
-    label: '今年總花費',
+    label: '年度花費',
     value: formatCurrency(yearCost.value),
   },
   {
-    label: '平均油耗',
-    value: averageFuelEfficiency.value ? `${formatNumber(averageFuelEfficiency.value, 1)} km/L` : '資料不足',
+    label: '平均效率',
+    value: averageFuelEfficiency.value
+      ? `${formatNumber(averageFuelEfficiency.value, 1)} ${getEnergyEfficiencyLabel(activeVehicle.value?.vehicleType)}`
+      : '尚無資料',
   },
   {
     label: '最近一次保養',
@@ -102,39 +110,43 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Dashboard</h1>
-        <p>快速掌握目前車況、花費與接近到期的保養項目。</p>
+        <p>以車輛為中心整合保養、維修、能源與保險資訊，手機上也能快速掌握狀態。</p>
       </div>
     </div>
 
     <section class="hero-card dark-surface">
       <div class="hero-card__content">
         <div class="hero-card__summary">
-          <p class="eyebrow">Primary Ride</p>
+          <p class="eyebrow">我的車輛</p>
+          <div class="hero-card__type-row">
+            <span class="hero-card__type-icon">{{ getVehicleTypeIcon(activeVehicle?.vehicleType) }}</span>
+            <span class="hero-card__type-label">{{ getVehicleTypeLabel(activeVehicle?.vehicleType) }}</span>
+          </div>
           <h2>{{ heroVehicleTitle }}</h2>
           <p class="hero-card__plate">
-            {{ vehicleStore.activeVehicle?.plateNumber ?? '先到車庫新增車輛並設定主要機車' }}
+            {{ activeVehicle?.plateNumber ?? '先到車輛管理新增一台車，並設定為主要車輛。' }}
           </p>
 
           <div class="hero-card__media mobile-only">
-            <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
+            <VehicleImage :src="activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
           </div>
         </div>
 
         <div class="hero-card__aside">
           <div class="hero-card__media desktop-only">
-            <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
+            <VehicleImage :src="activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
           </div>
 
           <div class="hero-card__stats">
             <div class="hero-stat">
               <span>目前里程</span>
-              <strong>{{ vehicleStore.activeVehicle ? formatNumber(vehicleStore.activeVehicle.currentMileage) : '--' }}</strong>
+              <strong>{{ activeVehicle ? formatNumber(activeVehicle.currentMileage) : '--' }}</strong>
               <small>km</small>
             </div>
             <div class="hero-stat hero-stat--soft">
               <span>下一個提醒</span>
               <strong>{{ heroReminder ? heroReminder.item : '尚未建立' }}</strong>
-              <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立規則後顯示' }}</small>
+              <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立提醒規則後會顯示' }}</small>
             </div>
           </div>
         </div>
@@ -153,7 +165,7 @@ onMounted(async () => {
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Expense Overview</p>
-            <h3>核心統計</h3>
+            <h3>支出概覽</h3>
           </div>
         </div>
         <div class="section-stack">
@@ -210,7 +222,7 @@ onMounted(async () => {
         <div v-if="reminderStore.activeVehicleSummaries.length" class="reminder-stack">
           <ReminderCard v-for="reminder in reminderStore.activeVehicleSummaries.slice(0, 3)" :key="reminder.id" :reminder="reminder" />
         </div>
-        <el-empty v-else description="先新增機車或建立提醒規則" />
+        <el-empty v-else description="新增車輛後，再設定保養提醒規則" />
       </section>
     </div>
   </section>
@@ -244,6 +256,21 @@ onMounted(async () => {
   margin: 12px 0 0;
   color: rgba(255, 255, 255, 0.75);
   font-size: 15px;
+}
+
+.hero-card__type-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hero-card__type-icon {
+  font-size: 20px;
+}
+
+.hero-card__type-label {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .hero-card__stats {
@@ -329,11 +356,11 @@ onMounted(async () => {
 }
 
 .insurance-card--warning {
-  background: rgba(230, 162, 60, 0.10);
+  background: rgba(230, 162, 60, 0.1);
 }
 
 .insurance-card--overdue {
-  background: rgba(245, 108, 108, 0.10);
+  background: rgba(245, 108, 108, 0.1);
 }
 
 .insurance-card--normal {

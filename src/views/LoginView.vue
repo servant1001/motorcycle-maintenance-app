@@ -47,10 +47,11 @@ async function handleGoogleLogin() {
     <section class="login-shell">
       <article class="login-showcase dark-surface">
         <div class="login-showcase__header">
-          <el-tag effect="dark" round class="login-showcase__tag">Mobility Care OS</el-tag>
-          <h1>像 Tesla / Gogoro App 一樣，優雅管理你的每一次騎乘維護。</h1>
+          <el-tag effect="dark" round class="login-showcase__tag">DriveOne Mobility OS</el-tag>
+          <h1>DriveOne<br>優雅駕馭，智慧管理</h1>
           <p>
-            把保養、維修、加油與花費集中在同一個介面，快速掌握目前里程、提醒狀態與愛車成本。
+            把保養、維修、能源補給、保險與里程資料收進同一個介面。
+            不論是汽車、機車、電動機車還是電動汽車，都能用同一套流程整理。
           </p>
         </div>
 
@@ -58,9 +59,9 @@ async function handleGoogleLogin() {
           <div class="vehicle-card">
             <div class="vehicle-card__top">
               <div>
-                <p class="eyebrow">Primary Ride</p>
-                <h2>Yamaha 勁戰</h2>
-                <span>ABC-1234</span>
+                <p class="eyebrow">DriveOne Preview</p>
+                <h2>Tesla Model 3</h2>
+                <span>EVA-1024</span>
               </div>
               <div class="vehicle-card__icon">
                 <el-icon><Van /></el-icon>
@@ -73,8 +74,8 @@ async function handleGoogleLogin() {
                 <strong>25,800 km</strong>
               </div>
               <div>
-                <small>平均油耗</small>
-                <strong>42 km/L</strong>
+                <small>平均效率</small>
+                <strong>6.2 km/kWh</strong>
               </div>
             </div>
           </div>
@@ -85,21 +86,21 @@ async function handleGoogleLogin() {
             <el-icon><Tools /></el-icon>
             <div>
               <strong>保養提醒</strong>
-              <span>機油剩餘 200 km，自動掌握到期狀態</span>
+              <span>機油剩餘 200 km，輪胎與煞車狀態一眼就能掌握。</span>
             </div>
           </div>
           <div class="feature-card">
             <el-icon><Coin /></el-icon>
             <div>
-              <strong>費用視角</strong>
-              <span>本月花費、年度花費、油耗表現一眼看懂</span>
+              <strong>能源追蹤</strong>
+              <span>支援加油與充電紀錄，直接比較花費與效率表現。</span>
             </div>
           </div>
           <div class="feature-card">
             <el-icon><DataBoard /></el-icon>
             <div>
-              <strong>手機優先</strong>
-              <span>不是傳統 ERP 後台，而是面向日常騎乘的車輛 App</span>
+              <strong>行動化 Dashboard</strong>
+              <span>不是傳統後台，而是更貼近日常使用的車輛管理 App。</span>
             </div>
           </div>
         </div>
@@ -108,9 +109,9 @@ async function handleGoogleLogin() {
       <section class="login-panel app-surface">
         <div class="login-panel__header">
           <p class="eyebrow">Sign In</p>
-          <h2>{{ mode === 'login' ? '歡迎回來' : '建立你的車庫' }}</h2>
+          <h2>{{ mode === 'login' ? '登入 DriveOne' : '建立 DriveOne 帳號' }}</h2>
           <p class="section-subtitle">
-            {{ mode === 'login' ? '登入後立即查看車況、保養與花費摘要。' : '先建立帳號，開始管理你的每一台機車。' }}
+            {{ mode === 'login' ? '登入後立即查看車況、保養與花費摘要。' : '先建立帳號，開始管理你的每一台車輛。' }}
           </p>
         </div>
 
@@ -123,7 +124,7 @@ async function handleGoogleLogin() {
 
         <el-form label-position="top" class="login-form" @submit.prevent="handleSubmit">
           <el-form-item v-if="mode === 'register'" label="顯示名稱">
-            <el-input v-model="form.displayName" placeholder="例如：Ryan" size="large" />
+            <el-input v-model="form.displayName" placeholder="例如 Ryan" size="large" />
           </el-form-item>
           <el-form-item label="Email">
             <el-input v-model="form.email" type="email" placeholder="you@example.com" size="large" />
@@ -133,11 +134,11 @@ async function handleGoogleLogin() {
           </el-form-item>
 
           <el-button type="primary" class="primary-cta login-submit" :loading="authStore.loading" @click="handleSubmit">
-            {{ mode === 'login' ? '登入系統' : '建立帳號' }}
+            {{ mode === 'login' ? '登入帳號' : '建立帳號' }}
           </el-button>
 
           <div class="login-divider">
-            <span>或使用其他方式</span>
+            <span>或使用第三方登入</span>
           </div>
 
           <el-button plain class="secondary-cta login-google" :loading="authStore.loading" @click="handleGoogleLogin">
@@ -147,8 +148,8 @@ async function handleGoogleLogin() {
         </el-form>
 
         <div class="login-footnote">
-          <span><el-icon><CircleCheck /></el-icon> Firebase Auth 安全登入</span>
-          <span><el-icon><Lock /></el-icon> 資料依使用者 uid 隔離</span>
+          <span><el-icon><CircleCheck /></el-icon> Firebase 驗證保護登入流程</span>
+          <span><el-icon><Lock /></el-icon> 資料依使用者 uid 分流儲存</span>
         </div>
       </section>
     </section>
@@ -196,7 +197,7 @@ async function handleGoogleLogin() {
 .login-showcase__header h1 {
   margin: 10px 0 0;
   font-size: clamp(34px, 6vw, 54px);
-  line-height: 0.98;
+  line-height: 1.2;
   letter-spacing: -0.05em;
 }
 
@@ -246,8 +247,8 @@ async function handleGoogleLogin() {
   width: 100%;
   padding: 18px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .vehicle-card__top {

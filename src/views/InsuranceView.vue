@@ -66,13 +66,13 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>保險管理</h1>
-        <p>管理每台機車的保單資訊，並掌握 30 天內到期提醒。</p>
+        <p>管理每台車輛的保單資訊，並掌握 30 天內到期提醒與過期狀態。</p>
       </div>
       <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增保險</el-button>
     </div>
 
     <div class="toolbar">
-      <el-select v-model="selectedVehicleId" clearable placeholder="篩選機車">
+      <el-select v-model="selectedVehicleId" clearable placeholder="篩選車輛">
         <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
       </el-select>
       <el-select v-model="statusFilter">
@@ -98,7 +98,7 @@ onMounted(async () => {
         <div class="mobile-record-card__meta">
           <div class="metric-chip">
             <strong>{{ record.remainingDays >= 0 ? record.remainingDays : Math.abs(record.remainingDays) }}</strong>
-            <span>{{ record.remainingDays >= 0 ? '剩餘天數' : '已過期天數' }}</span>
+            <span>{{ record.remainingDays >= 0 ? '剩餘天數' : '已逾期天數' }}</span>
           </div>
           <div class="metric-chip">
             <strong>{{ formatDate(record.endDate) }}</strong>
@@ -106,7 +106,7 @@ onMounted(async () => {
           </div>
         </div>
         <div class="mobile-record-card__subtitle insurance-mobile-extra">
-          保費 {{ formatCurrency(record.premium) }} · 保額 {{ formatNumber(record.coverageAmount) }}
+          保費 {{ formatCurrency(record.premium) }} · 保障額度 {{ formatNumber(record.coverageAmount) }}
         </div>
         <div class="mobile-record-card__actions">
           <el-button class="secondary-cta" @click="openEdit(record)">編輯</el-button>
@@ -116,7 +116,7 @@ onMounted(async () => {
     </div>
 
     <el-table :data="filteredRecords" class="glass-card desktop-table desktop-only" stripe>
-      <el-table-column label="機車" min-width="160">
+      <el-table-column label="車輛" min-width="160">
         <template #default="{ row }">{{ vehicleNameMap.get(row.vehicleId) ?? '-' }}</template>
       </el-table-column>
       <el-table-column label="保險類型" prop="insuranceType" min-width="130" />

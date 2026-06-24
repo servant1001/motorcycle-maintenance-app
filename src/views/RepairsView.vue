@@ -24,9 +24,7 @@ const vehicleNameMap = computed(
 const filteredRecords = computed(() =>
   repairStore.records.filter((record) => {
     const matchesVehicle = !selectedVehicleId.value || record.vehicleId === selectedVehicleId.value
-    const matchesDate =
-      !dateRange.value ||
-      (record.date >= dateRange.value[0] && record.date <= dateRange.value[1])
+    const matchesDate = !dateRange.value || (record.date >= dateRange.value[0] && record.date <= dateRange.value[1])
     return matchesVehicle && matchesDate
   }),
 )
@@ -54,7 +52,7 @@ async function submitRecord(payload: RepairInput) {
 }
 
 async function removeRecord(record: RepairRecord) {
-  await ElMessageBox.confirm(`確定刪除維修紀錄「${record.problem}」嗎？`, '刪除確認', { type: 'warning' })
+  await ElMessageBox.confirm(`確定刪除「${record.problem}」維修紀錄嗎？`, '刪除確認', { type: 'warning' })
   await repairStore.remove(record.id)
   ElMessage.success('維修紀錄已刪除')
 }
@@ -69,13 +67,13 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>維修紀錄</h1>
-        <p>記錄故障問題、維修內容與店家資訊。</p>
+        <p>集中保存故障原因、維修內容與花費，方便後續追蹤每台車輛狀況。</p>
       </div>
-      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增紀錄</el-button>
+      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增維修紀錄</el-button>
     </div>
 
     <div class="toolbar">
-      <el-select v-model="selectedVehicleId" clearable placeholder="篩選機車">
+      <el-select v-model="selectedVehicleId" clearable placeholder="篩選車輛">
         <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
       </el-select>
       <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="開始日期" end-placeholder="結束日期" />
@@ -100,10 +98,10 @@ onMounted(async () => {
 
     <el-table :data="filteredRecords" class="glass-card desktop-table desktop-only" stripe>
       <el-table-column label="日期" prop="date" min-width="120" sortable />
-      <el-table-column label="機車" min-width="160">
+      <el-table-column label="車輛" min-width="160">
         <template #default="{ row }">{{ vehicleNameMap.get(row.vehicleId) ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="問題" prop="problem" min-width="160" />
+      <el-table-column label="問題描述" prop="problem" min-width="160" />
       <el-table-column label="維修內容" prop="repairContent" min-width="180" />
       <el-table-column label="金額" min-width="120">
         <template #default="{ row }">{{ formatCurrency(row.cost) }}</template>

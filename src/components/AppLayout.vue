@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import VehicleImage from '@/components/VehicleImage.vue'
+import { getVehicleTypeIcon, getVehicleTypeLabel } from '@/constants/vehicles'
 import { useAuthStore } from '@/stores/authStore'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useInsuranceStore } from '@/stores/insuranceStore'
@@ -24,12 +25,12 @@ const drawerOpen = ref(false)
 
 const navigationItems = [
   { label: 'Dashboard', routeName: 'dashboard', icon: 'DataBoard' },
-  { label: '車庫', routeName: 'vehicles', icon: 'Van' },
+  { label: '車輛', routeName: 'vehicles', icon: 'Van' },
   { label: '保養', routeName: 'maintenance', icon: 'Tools' },
   { label: '維修', routeName: 'repairs', icon: 'SetUp' },
   { label: '能源', routeName: 'fuel', icon: 'Coin' },
   { label: '保險', routeName: 'insurance', icon: 'Checked' },
-  { label: '保養提醒', routeName: 'reminders', icon: 'Bell' },
+  { label: '提醒', routeName: 'reminders', icon: 'Bell' },
   { label: '統計', routeName: 'statistics', icon: 'PieChart' },
 ]
 
@@ -67,10 +68,10 @@ onMounted(async () => {
   <div class="layout-shell">
     <aside class="sidebar">
       <div class="brand dark-surface">
-        <div class="brand-mark">M</div>
+        <div class="brand-mark">D</div>
         <div>
-          <h2>機車保養站</h2>
-          <p>Personal Mobility Care</p>
+          <h2>DriveOne</h2>
+          <p>汽機車生活管理平台</p>
         </div>
       </div>
 
@@ -90,9 +91,11 @@ onMounted(async () => {
         <div class="sidebar-footer__image-wrap">
           <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="vehicleStore.activeVehicle?.model" variant="card" />
         </div>
-        <p class="eyebrow">目前車輛</p>
-        <strong>{{ vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未設定' }}</strong>
-        <span class="muted">{{ vehicleStore.activeVehicle?.plateNumber ?? '設定主要車輛後顯示' }}</span>
+        <p class="eyebrow">主要車輛</p>
+        <strong>{{ vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未選擇' }}</strong>
+        <span class="muted">
+          {{ vehicleStore.activeVehicle ? `${getVehicleTypeIcon(vehicleStore.activeVehicle.vehicleType)} ${getVehicleTypeLabel(vehicleStore.activeVehicle.vehicleType)} · ${vehicleStore.activeVehicle.plateNumber}` : '到車輛管理設定主要車輛' }}
+        </span>
       </div>
     </aside>
 
@@ -103,16 +106,17 @@ onMounted(async () => {
             <el-icon><Menu /></el-icon>
           </el-button>
           <div>
-            <p class="eyebrow">Vehicle Care Hub</p>
+            <p class="eyebrow">DriveOne Mobility Platform</p>
             <h1>{{ authStore.displayName }}</h1>
-            <p class="muted">像 Tesla / Gogoro App 一樣快速查看你的愛車狀態。</p>
+            <p class="muted">用更輕鬆的方式管理每一台車輛的保養、維修、能源與保險資訊。</p>
           </div>
         </div>
 
         <div class="topbar-actions">
           <div v-if="vehicleStore.activeVehicle" class="topbar-vehicle app-surface">
-            <span class="eyebrow">Primary Ride</span>
+            <span class="eyebrow">Primary Vehicle</span>
             <strong>{{ vehicleStore.activeVehicle.plateNumber }}</strong>
+            <small>{{ getVehicleTypeIcon(vehicleStore.activeVehicle.vehicleType) }} {{ getVehicleTypeLabel(vehicleStore.activeVehicle.vehicleType) }}</small>
           </div>
           <el-button plain class="secondary-cta" @click="handleLogout">登出</el-button>
         </div>
@@ -125,7 +129,7 @@ onMounted(async () => {
 
     <el-drawer v-model="drawerOpen" direction="ltr" size="80%">
       <template #header>
-        <strong>功能選單</strong>
+        <strong>快速導覽</strong>
       </template>
       <div class="drawer-nav">
         <el-button
@@ -259,6 +263,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.topbar-vehicle small {
+  color: var(--ds-text-soft);
 }
 
 .drawer-nav {
