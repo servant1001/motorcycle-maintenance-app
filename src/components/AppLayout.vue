@@ -68,7 +68,7 @@ onMounted(async () => {
   <div class="layout-shell">
     <aside class="sidebar">
       <div class="brand dark-surface">
-        <div class="brand-mark">D</div>
+        <img class="brand-mark" src="/driveone-logo.png" alt="DriveOne logo" />
         <div>
           <h2>DriveOne</h2>
           <p>汽機車生活管理平台</p>
@@ -181,12 +181,10 @@ onMounted(async () => {
   width: 52px;
   height: 52px;
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
-  color: white;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
+  object-fit: cover;
+  display: block;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(2, 8, 23, 0.24);
 }
 
 .brand h2,
