@@ -25,6 +25,7 @@ export async function createVehicle(uid: string, payload: VehicleInput) {
   const recordRef = push(userRef(uid, 'vehicles'))
   const vehicle: Omit<Vehicle, 'id'> = {
     ...payload,
+    imageUrl: payload.imageUrl?.trim() || '',
     year: payload.year || undefined,
     note: payload.note?.trim() || '',
     createdAt: now,
@@ -38,6 +39,7 @@ export async function createVehicle(uid: string, payload: VehicleInput) {
 export async function updateVehicle(uid: string, id: string, payload: VehicleInput) {
   await update(userRef(uid, `vehicles/${id}`), {
     ...payload,
+    imageUrl: payload.imageUrl?.trim() || '',
     year: payload.year || undefined,
     note: payload.note?.trim() || '',
     updatedAt: Date.now(),

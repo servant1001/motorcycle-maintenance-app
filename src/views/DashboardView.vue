@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import ReminderCard from '@/components/ReminderCard.vue'
+import VehicleImage from '@/components/VehicleImage.vue'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useReminderStore } from '@/stores/reminderStore'
@@ -95,24 +96,34 @@ onMounted(async () => {
 
     <section class="hero-card dark-surface">
       <div class="hero-card__content">
-        <div>
+        <div class="hero-card__summary">
           <p class="eyebrow">Primary Ride</p>
           <h2>{{ heroVehicleTitle }}</h2>
           <p class="hero-card__plate">
             {{ vehicleStore.activeVehicle?.plateNumber ?? '先到車庫新增車輛並設定主要機車' }}
           </p>
+
+          <div class="hero-card__media mobile-only">
+            <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
+          </div>
         </div>
 
-        <div class="hero-card__stats">
-          <div class="hero-stat">
-            <span>目前里程</span>
-            <strong>{{ vehicleStore.activeVehicle ? formatNumber(vehicleStore.activeVehicle.currentMileage) : '--' }}</strong>
-            <small>km</small>
+        <div class="hero-card__aside">
+          <div class="hero-card__media desktop-only">
+            <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="heroVehicleTitle" variant="hero" />
           </div>
-          <div class="hero-stat hero-stat--soft">
-            <span>下一個提醒</span>
-            <strong>{{ heroReminder ? heroReminder.item : '尚未建立' }}</strong>
-            <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立規則後顯示' }}</small>
+
+          <div class="hero-card__stats">
+            <div class="hero-stat">
+              <span>目前里程</span>
+              <strong>{{ vehicleStore.activeVehicle ? formatNumber(vehicleStore.activeVehicle.currentMileage) : '--' }}</strong>
+              <small>km</small>
+            </div>
+            <div class="hero-stat hero-stat--soft">
+              <span>下一個提醒</span>
+              <strong>{{ heroReminder ? heroReminder.item : '尚未建立' }}</strong>
+              <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立規則後顯示' }}</small>
+            </div>
           </div>
         </div>
       </div>
@@ -181,6 +192,13 @@ onMounted(async () => {
   gap: 22px;
 }
 
+.hero-card__summary,
+.hero-card__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .hero-card h2 {
   margin: 8px 0 0;
   font-size: clamp(28px, 4.4vw, 44px);
@@ -198,6 +216,10 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.hero-card__media {
+  border-radius: 24px;
 }
 
 .hero-stat {
@@ -270,7 +292,7 @@ onMounted(async () => {
 @media (min-width: 961px) {
   .hero-card__content {
     grid-template-columns: 1.15fr 0.85fr;
-    align-items: end;
+    align-items: stretch;
   }
 
   .dashboard-grid {

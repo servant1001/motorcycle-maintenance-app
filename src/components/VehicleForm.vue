@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import VehicleImage from '@/components/VehicleImage.vue'
 import type { Vehicle, VehicleInput } from '@/types/vehicle'
 
 const props = defineProps<{
@@ -18,6 +19,7 @@ const form = reactive<VehicleInput>({
   plateNumber: '',
   brand: '',
   model: '',
+  imageUrl: '',
   year: undefined,
   currentMileage: 0,
   note: '',
@@ -34,6 +36,7 @@ function resetForm() {
   form.plateNumber = props.editingVehicle?.plateNumber ?? ''
   form.brand = props.editingVehicle?.brand ?? ''
   form.model = props.editingVehicle?.model ?? ''
+  form.imageUrl = props.editingVehicle?.imageUrl ?? ''
   form.year = props.editingVehicle?.year
   form.currentMileage = props.editingVehicle?.currentMileage ?? 0
   form.note = props.editingVehicle?.note ?? ''
@@ -88,6 +91,14 @@ async function handleSubmit() {
         </el-col>
       </el-row>
 
+      <el-form-item label="圖片連結">
+        <el-input v-model="form.imageUrl" placeholder="https://example.com/scooter.jpg" />
+      </el-form-item>
+
+      <div class="vehicle-preview">
+        <VehicleImage :src="form.imageUrl" :alt="`${form.brand} ${form.model}`" variant="preview" />
+      </div>
+
       <el-form-item label="目前里程" prop="currentMileage">
         <el-input-number v-model="form.currentMileage" :min="0" style="width: 100%" />
       </el-form-item>
@@ -103,3 +114,9 @@ async function handleSubmit() {
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.vehicle-preview {
+  margin-bottom: 18px;
+}
+</style>

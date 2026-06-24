@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import VehicleImage from '@/components/VehicleImage.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
@@ -82,6 +83,9 @@ onMounted(async () => {
       </el-menu>
 
       <div class="sidebar-footer app-surface">
+        <div class="sidebar-footer__image-wrap">
+          <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="vehicleStore.activeVehicle?.model" variant="card" />
+        </div>
         <p class="eyebrow">目前車輛</p>
         <strong>{{ vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未設定' }}</strong>
         <span class="muted">{{ vehicleStore.activeVehicle?.plateNumber ?? '設定主要車輛後顯示' }}</span>
@@ -203,6 +207,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.sidebar-footer__image-wrap {
+  margin-bottom: 6px;
 }
 
 .layout-main {

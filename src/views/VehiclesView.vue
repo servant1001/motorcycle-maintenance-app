@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import VehicleForm from '@/components/VehicleForm.vue'
+import VehicleImage from '@/components/VehicleImage.vue'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import type { Vehicle, VehicleInput } from '@/types/vehicle'
 import { formatNumber } from '@/utils/format'
@@ -68,6 +69,9 @@ onMounted(() => {
 
     <div class="mobile-only mobile-card-list">
       <article v-for="vehicle in filteredVehicles" :key="vehicle.id" class="mobile-record-card">
+        <div class="vehicle-card-media">
+          <VehicleImage :src="vehicle.imageUrl" :alt="`${vehicle.brand} ${vehicle.model}`" variant="card" />
+        </div>
         <div class="mobile-record-card__top">
           <div>
             <p class="eyebrow">{{ vehicle.brand }}</p>
@@ -101,6 +105,11 @@ onMounted(() => {
     </div>
 
     <el-table :data="filteredVehicles" class="glass-card desktop-table desktop-only" stripe>
+      <el-table-column label="圖片" min-width="120">
+        <template #default="{ row }">
+          <VehicleImage :src="row.imageUrl" :alt="`${row.brand} ${row.model}`" variant="thumb" />
+        </template>
+      </el-table-column>
       <el-table-column label="車牌" prop="plateNumber" min-width="120" />
       <el-table-column label="品牌 / 車型" min-width="180">
         <template #default="{ row }">
@@ -131,3 +140,9 @@ onMounted(() => {
     />
   </section>
 </template>
+
+<style scoped>
+.vehicle-card-media {
+  margin: -2px -2px 14px;
+}
+</style>
