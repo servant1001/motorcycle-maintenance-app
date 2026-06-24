@@ -13,6 +13,7 @@ const dialogVisible = ref(false)
 const editingRecord = ref<RepairRecord | null>(null)
 const selectedVehicleId = ref('')
 const dateRange = ref<[string, string] | null>(null)
+const viewMode = ref<'card' | 'table'>('card')
 
 const vehicleNameMap = computed(
   () =>
@@ -47,6 +48,7 @@ async function submitRecord(payload: RepairInput) {
     await repairStore.create(payload)
     ElMessage.success('維修紀錄已新增')
   }
+
   await vehicleStore.fetchAll()
   dialogVisible.value = false
 }
@@ -67,19 +69,36 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>維修紀錄</h1>
-        <p>集中保存故障原因、維修內容與花費，方便後續追蹤每台車輛狀況。</p>
+        <p>可依車輛與日期篩選，並自由切換卡片或列表顯示方式。</p>
       </div>
-      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增維修紀錄</el-button>
+      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">
+        新增維修紀錄
+      </el-button>
     </div>
 
     <div class="toolbar">
       <el-select v-model="selectedVehicleId" clearable placeholder="篩選車輛">
-        <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
+        <el-option
+          v-for="option in vehicleStore.vehicleOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
       </el-select>
-      <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="開始日期" end-placeholder="結束日期" />
+      <el-date-picker
+        v-model="dateRange"
+        type="daterange"
+        value-format="YYYY-MM-DD"
+        start-placeholder="開始日期"
+        end-placeholder="結束日期"
+      />
+      <el-radio-group v-model="viewMode" class="view-toggle">
+        <el-radio-button label="card">卡片</el-radio-button>
+        <el-radio-button label="table">列表</el-radio-button>
+      </el-radio-group>
     </div>
 
-    <div class="mobile-only mobile-card-list">
+    <div v-if="viewMode === 'card'" class="mobile-card-list record-card-grid">
       <article v-for="record in filteredRecords" :key="record.id" class="mobile-record-card">
         <div class="mobile-record-card__top">
           <div>
@@ -89,6 +108,7 @@ onMounted(async () => {
           </div>
           <el-tag type="danger" round>{{ formatCurrency(record.cost) }}</el-tag>
         </div>
+
         <div class="mobile-record-card__actions">
           <el-button class="secondary-cta" @click="openEdit(record)">編輯</el-button>
           <el-button class="secondary-cta" type="danger" plain @click="removeRecord(record)">刪除</el-button>
@@ -96,7 +116,7 @@ onMounted(async () => {
       </article>
     </div>
 
-    <el-table :data="filteredRecords" class="glass-card desktop-table desktop-only" stripe>
+    <el-table v-else :data="filteredRecords" class="glass-card desktop-table" stripe>
       <el-table-column label="日期" prop="date" min-width="120" sortable />
       <el-table-column label="車輛" min-width="160">
         <template #default="{ row }">{{ vehicleNameMap.get(row.vehicleId) ?? '-' }}</template>
@@ -122,3 +142,24 @@ onMounted(async () => {
     />
   </section>
 </template>
+
+<style scoped>
+.view-toggle {
+  margin-left: auto;
+}
+
+@media (min-width: 961px) {
+  .record-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-toggle {
+    margin-left: 0;
+  }
+}
+</style>

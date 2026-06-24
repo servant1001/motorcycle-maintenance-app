@@ -24,7 +24,7 @@ const reminderStore = useReminderStore()
 const drawerOpen = ref(false)
 
 const navigationItems = [
-  { label: 'Dashboard', routeName: 'dashboard', icon: 'DataBoard' },
+  { label: '儀錶板', routeName: 'dashboard', icon: 'DataBoard' },
   { label: '車輛', routeName: 'vehicles', icon: 'Van' },
   { label: '保養', routeName: 'maintenance', icon: 'Tools' },
   { label: '維修', routeName: 'repairs', icon: 'SetUp' },

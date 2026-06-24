@@ -14,6 +14,7 @@ const dialogVisible = ref(false)
 const editingRecord = ref<InsuranceRecord | null>(null)
 const selectedVehicleId = ref('')
 const statusFilter = ref<'all' | 'normal' | 'warning' | 'overdue'>('all')
+const viewMode = ref<'card' | 'table'>('card')
 
 const vehicleNameMap = computed(
   () => new Map(vehicleStore.vehicles.map((vehicle) => [vehicle.id, `${vehicle.brand} ${vehicle.model}`])),
@@ -66,14 +67,21 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>保險管理</h1>
-        <p>管理每台車輛的保單資訊，並掌握 30 天內到期提醒與過期狀態。</p>
+        <p>管理每台車輛的保單資訊，並自由切換卡片或列表顯示方式。</p>
       </div>
-      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增保險</el-button>
+      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">
+        新增保險
+      </el-button>
     </div>
 
     <div class="toolbar">
       <el-select v-model="selectedVehicleId" clearable placeholder="篩選車輛">
-        <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
+        <el-option
+          v-for="option in vehicleStore.vehicleOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
       </el-select>
       <el-select v-model="statusFilter">
         <el-option label="全部狀態" value="all" />
@@ -81,9 +89,13 @@ onMounted(async () => {
         <el-option label="即將到期" value="warning" />
         <el-option label="已過期" value="overdue" />
       </el-select>
+      <el-radio-group v-model="viewMode" class="view-toggle">
+        <el-radio-button label="card">卡片</el-radio-button>
+        <el-radio-button label="table">列表</el-radio-button>
+      </el-radio-group>
     </div>
 
-    <div class="mobile-only mobile-card-list">
+    <div v-if="viewMode === 'card'" class="mobile-card-list record-card-grid">
       <article v-for="record in filteredRecords" :key="record.id" class="mobile-record-card">
         <div class="mobile-record-card__top">
           <div>
@@ -95,6 +107,7 @@ onMounted(async () => {
             {{ getInsuranceStatusLabel(record) }}
           </el-tag>
         </div>
+
         <div class="mobile-record-card__meta">
           <div class="metric-chip">
             <strong>{{ record.remainingDays >= 0 ? record.remainingDays : Math.abs(record.remainingDays) }}</strong>
@@ -105,9 +118,11 @@ onMounted(async () => {
             <span>到期日</span>
           </div>
         </div>
+
         <div class="mobile-record-card__subtitle insurance-mobile-extra">
           保費 {{ formatCurrency(record.premium) }} · 保障額度 {{ formatNumber(record.coverageAmount) }}
         </div>
+
         <div class="mobile-record-card__actions">
           <el-button class="secondary-cta" @click="openEdit(record)">編輯</el-button>
           <el-button class="secondary-cta" type="danger" plain @click="removeRecord(record)">刪除</el-button>
@@ -115,7 +130,7 @@ onMounted(async () => {
       </article>
     </div>
 
-    <el-table :data="filteredRecords" class="glass-card desktop-table desktop-only" stripe>
+    <el-table v-else :data="filteredRecords" class="glass-card desktop-table" stripe>
       <el-table-column label="車輛" min-width="160">
         <template #default="{ row }">{{ vehicleNameMap.get(row.vehicleId) ?? '-' }}</template>
       </el-table-column>
@@ -157,5 +172,24 @@ onMounted(async () => {
 <style scoped>
 .insurance-mobile-extra {
   margin-top: 12px;
+}
+
+.view-toggle {
+  margin-left: auto;
+}
+
+@media (min-width: 961px) {
+  .record-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-toggle {
+    margin-left: 0;
+  }
 }
 </style>

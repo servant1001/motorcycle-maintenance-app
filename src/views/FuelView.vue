@@ -19,6 +19,7 @@ const vehicleStore = useVehicleStore()
 const dialogVisible = ref(false)
 const editingRecord = ref<FuelRecord | null>(null)
 const selectedVehicleId = ref('')
+const viewMode = ref<'card' | 'table'>('card')
 
 const filteredRecords = computed(() =>
   fuelStore.records.filter((record) => !selectedVehicleId.value || record.vehicleId === selectedVehicleId.value),
@@ -73,6 +74,7 @@ async function submitRecord(payload: FuelInput) {
     await fuelStore.create(payload)
     ElMessage.success(`${getEnergyActionLabel(selectedVehicle.value?.vehicleType)}已新增`)
   }
+
   await vehicleStore.fetchAll()
   dialogVisible.value = false
 }
@@ -93,30 +95,45 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>{{ pageTitle }}</h1>
-        <p>追蹤各台車輛的能源補給、單次花費與使用效率，燃油與純電車皆可使用。</p>
+        <p>追蹤各台車輛的能源補給、單次花費與使用效率，並自由切換卡片或列表顯示。</p>
       </div>
-      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">新增{{ addActionLabel }}</el-button>
+      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">
+        新增{{ addActionLabel }}
+      </el-button>
     </div>
 
     <div class="toolbar">
       <el-select v-model="selectedVehicleId" clearable placeholder="篩選車輛">
-        <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
+        <el-option
+          v-for="option in vehicleStore.vehicleOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
       </el-select>
       <el-tag v-if="averageEfficiency" type="success" effect="light">
         平均效率 {{ formatNumber(averageEfficiency, 1) }} {{ efficiencyLabel }}
       </el-tag>
+      <el-radio-group v-model="viewMode" class="view-toggle">
+        <el-radio-button label="card">卡片</el-radio-button>
+        <el-radio-button label="table">列表</el-radio-button>
+      </el-radio-group>
     </div>
 
-    <div class="mobile-only mobile-card-list">
+    <div v-if="viewMode === 'card'" class="mobile-card-list record-card-grid">
       <article v-for="record in filteredRecords" :key="record.id" class="mobile-record-card">
         <div class="mobile-record-card__top">
           <div>
             <p class="eyebrow">{{ vehicleNameMap.get(record.vehicleId) ?? '-' }}</p>
             <h3 class="mobile-record-card__title">{{ formatDate(record.date) }}</h3>
-            <p class="mobile-record-card__subtitle">{{ record.fuelType }} · {{ record.isFullTank ? (getRecordActionLabel(record).includes('充電') ? '已充滿' : '滿油') : '未補滿' }}</p>
+            <p class="mobile-record-card__subtitle">
+              {{ record.fuelType }} ·
+              {{ record.isFullTank ? (getRecordActionLabel(record).includes('充電') ? '已充滿' : '滿油') : '未補滿' }}
+            </p>
           </div>
           <el-tag type="success" round>{{ formatCurrency(record.amount) }}</el-tag>
         </div>
+
         <div class="mobile-record-card__meta">
           <div class="metric-chip">
             <strong>{{ formatNumber(record.liters, 1) }}</strong>
@@ -127,6 +144,7 @@ onMounted(async () => {
             <span>{{ getRecordEfficiencyLabel(record) }}</span>
           </div>
         </div>
+
         <div class="mobile-record-card__actions">
           <el-button class="secondary-cta" @click="openEdit(record)">編輯</el-button>
           <el-button class="secondary-cta" type="danger" plain @click="removeRecord(record)">刪除</el-button>
@@ -134,7 +152,7 @@ onMounted(async () => {
       </article>
     </div>
 
-    <el-table :data="filteredRecords" class="glass-card desktop-table desktop-only" stripe>
+    <el-table v-else :data="filteredRecords" class="glass-card desktop-table" stripe>
       <el-table-column label="日期" prop="date" min-width="120" />
       <el-table-column label="車輛" min-width="160">
         <template #default="{ row }">{{ vehicleNameMap.get(row.vehicleId) ?? '-' }}</template>
@@ -173,3 +191,24 @@ onMounted(async () => {
     />
   </section>
 </template>
+
+<style scoped>
+.view-toggle {
+  margin-left: auto;
+}
+
+@media (min-width: 961px) {
+  .record-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-toggle {
+    margin-left: 0;
+  }
+}
+</style>

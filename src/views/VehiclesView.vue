@@ -19,6 +19,7 @@ const insuranceStore = useInsuranceStore()
 const dialogVisible = ref(false)
 const editingVehicle = ref<Vehicle | null>(null)
 const keyword = ref('')
+const viewMode = ref<'card' | 'table'>('card')
 
 const filteredVehicles = computed(() =>
   vehicleStore.vehicles.filter((vehicle) => {
@@ -84,7 +85,7 @@ onMounted(() => {
     <div class="page-header">
       <div>
         <h1>車輛管理</h1>
-        <p>集中管理汽車、機車與電動車，設定主要車輛並快速查看保險狀態。</p>
+        <p>集中管理汽車、機車與電動車，並自由切換卡片或列表顯示方式。</p>
       </div>
       <el-button type="warning" class="primary-cta" @click="openCreate">新增車輛</el-button>
     </div>
@@ -93,13 +94,18 @@ onMounted(() => {
       <el-input v-model="keyword" placeholder="搜尋品牌、車型、車牌或類型" clearable>
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
+      <el-radio-group v-model="viewMode" class="view-toggle">
+        <el-radio-button label="card">卡片</el-radio-button>
+        <el-radio-button label="table">列表</el-radio-button>
+      </el-radio-group>
     </div>
 
-    <div class="mobile-only mobile-card-list">
+    <div v-if="viewMode === 'card'" class="mobile-card-list record-card-grid">
       <article v-for="vehicle in filteredVehicles" :key="vehicle.id" class="mobile-record-card">
         <div class="vehicle-card-media">
           <VehicleImage :src="vehicle.imageUrl" :alt="`${vehicle.brand} ${vehicle.model}`" variant="card" />
         </div>
+
         <div class="mobile-record-card__top">
           <div>
             <p class="eyebrow">{{ getVehicleTypeIcon(vehicle.vehicleType) }} {{ getVehicleTypeLabel(vehicle.vehicleType) }}</p>
@@ -156,7 +162,7 @@ onMounted(() => {
       </article>
     </div>
 
-    <el-table :data="filteredVehicles" class="glass-card desktop-table desktop-only" stripe>
+    <el-table v-else :data="filteredVehicles" class="glass-card desktop-table" stripe>
       <el-table-column label="圖片" min-width="120">
         <template #default="{ row }">
           <VehicleImage :src="row.imageUrl" :alt="`${row.brand} ${row.model}`" variant="thumb" />
@@ -211,6 +217,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.view-toggle {
+  margin-left: auto;
+}
+
 .vehicle-card-media {
   margin: -2px -2px 14px;
 }
@@ -226,5 +236,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+@media (min-width: 961px) {
+  .record-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-toggle {
+    margin-left: 0;
+  }
 }
 </style>
