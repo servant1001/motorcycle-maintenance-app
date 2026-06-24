@@ -1,0 +1,133 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import VehicleForm from '@/components/VehicleForm.vue'
+import { useVehicleStore } from '@/stores/vehicleStore'
+import type { Vehicle, VehicleInput } from '@/types/vehicle'
+import { formatNumber } from '@/utils/format'
+
+const vehicleStore = useVehicleStore()
+const dialogVisible = ref(false)
+const editingVehicle = ref<Vehicle | null>(null)
+const keyword = ref('')
+
+const filteredVehicles = computed(() =>
+  vehicleStore.vehicles.filter((vehicle) => {
+    const text = `${vehicle.brand} ${vehicle.model} ${vehicle.plateNumber}`.toLowerCase()
+    return text.includes(keyword.value.trim().toLowerCase())
+  }),
+)
+
+function openCreate() {
+  editingVehicle.value = null
+  dialogVisible.value = true
+}
+
+function openEdit(vehicle: Vehicle) {
+  editingVehicle.value = vehicle
+  dialogVisible.value = true
+}
+
+async function submitVehicle(payload: VehicleInput) {
+  if (editingVehicle.value) {
+    await vehicleStore.update(editingVehicle.value.id, payload)
+    ElMessage.success('機車資料已更新')
+  } else {
+    await vehicleStore.create(payload)
+    ElMessage.success('機車已新增')
+  }
+  dialogVisible.value = false
+}
+
+async function removeVehicle(vehicle: Vehicle) {
+  await ElMessageBox.confirm(`確定刪除 ${vehicle.plateNumber} 嗎？`, '刪除確認', { type: 'warning' })
+  await vehicleStore.remove(vehicle.id)
+  ElMessage.success('機車已刪除')
+}
+
+onMounted(() => {
+  vehicleStore.fetchAll()
+})
+</script>
+
+<template>
+  <section class="page-shell section-stack">
+    <div class="page-header">
+      <div>
+        <h1>機車管理</h1>
+        <p>管理你的車輛清單，並指定目前主要使用的車輛。</p>
+      </div>
+      <el-button type="warning" class="primary-cta" @click="openCreate">新增機車</el-button>
+    </div>
+
+    <div class="toolbar">
+      <el-input v-model="keyword" placeholder="搜尋品牌 / 車型 / 車牌" clearable>
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+    </div>
+
+    <div class="mobile-only mobile-card-list">
+      <article v-for="vehicle in filteredVehicles" :key="vehicle.id" class="mobile-record-card">
+        <div class="mobile-record-card__top">
+          <div>
+            <p class="eyebrow">{{ vehicle.brand }}</p>
+            <h3 class="mobile-record-card__title">{{ vehicle.model }}</h3>
+            <p class="mobile-record-card__subtitle">{{ vehicle.plateNumber }}</p>
+          </div>
+          <el-tag :type="vehicleStore.activeVehicleId === vehicle.id ? 'primary' : 'info'" round>
+            {{ vehicleStore.activeVehicleId === vehicle.id ? '主要車輛' : '一般車輛' }}
+          </el-tag>
+        </div>
+
+        <div class="mobile-record-card__meta">
+          <div class="metric-chip">
+            <strong>{{ formatNumber(vehicle.currentMileage) }}</strong>
+            <span>目前里程 km</span>
+          </div>
+          <div class="metric-chip">
+            <strong>{{ vehicle.year ?? '-' }}</strong>
+            <span>年份</span>
+          </div>
+        </div>
+
+        <div class="mobile-record-card__actions">
+          <el-button class="secondary-cta" @click="vehicleStore.chooseActiveVehicle(vehicle.id)">設為主要</el-button>
+          <div>
+            <el-button class="secondary-cta" @click="openEdit(vehicle)">編輯</el-button>
+            <el-button class="secondary-cta" type="danger" plain @click="removeVehicle(vehicle)">刪除</el-button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <el-table :data="filteredVehicles" class="glass-card desktop-table desktop-only" stripe>
+      <el-table-column label="車牌" prop="plateNumber" min-width="120" />
+      <el-table-column label="品牌 / 車型" min-width="180">
+        <template #default="{ row }">
+          {{ row.brand }} {{ row.model }}
+        </template>
+      </el-table-column>
+      <el-table-column label="里程" min-width="120">
+        <template #default="{ row }">{{ formatNumber(row.currentMileage) }} km</template>
+      </el-table-column>
+      <el-table-column label="年份" prop="year" min-width="90" />
+      <el-table-column label="主要車輛" min-width="120">
+        <template #default="{ row }">
+          <el-switch :model-value="vehicleStore.activeVehicleId === row.id" @change="vehicleStore.chooseActiveVehicle(row.id)" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" min-width="180" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" @click="openEdit(row)">編輯</el-button>
+          <el-button size="small" type="danger" plain @click="removeVehicle(row)">刪除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <VehicleForm
+      v-model="dialogVisible"
+      :editing-vehicle="editingVehicle"
+      @submit="submitVehicle"
+    />
+  </section>
+</template>
