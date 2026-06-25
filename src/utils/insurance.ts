@@ -4,6 +4,7 @@ import type { InsuranceRecord, InsuranceReminder } from '@/types/insurance'
 export function buildInsuranceReminder(record: InsuranceRecord): InsuranceReminder {
   const remainingDays = dayjs(record.endDate).startOf('day').diff(dayjs().startOf('day'), 'day')
   const status = remainingDays < 0 ? 'overdue' : remainingDays <= 30 ? 'warning' : 'normal'
+
   return {
     ...record,
     remainingDays,
@@ -15,9 +16,13 @@ export function sortInsuranceByExpiry(records: InsuranceRecord[]) {
   return [...records].sort((a, b) => a.endDate.localeCompare(b.endDate))
 }
 
+export function getInsuranceReminders(records: InsuranceRecord[]) {
+  return sortInsuranceByExpiry(records).map(buildInsuranceReminder)
+}
+
 export function getNearestInsurance(records: InsuranceRecord[]) {
-  const sorted = sortInsuranceByExpiry(records)
-  return sorted.length ? buildInsuranceReminder(sorted[0]) : null
+  const reminders = getInsuranceReminders(records)
+  return reminders.length ? reminders[0] : null
 }
 
 export function getInsuranceStatusLabel(reminder: InsuranceReminder) {

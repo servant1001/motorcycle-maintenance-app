@@ -16,7 +16,7 @@ import { useRepairStore } from '@/stores/repairStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import { getAverageFuelEfficiency } from '@/utils/fuel'
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format'
-import { getInsuranceStatusLabel, getNearestInsurance } from '@/utils/insurance'
+import { getInsuranceReminders, getInsuranceStatusLabel, getNearestInsurance } from '@/utils/insurance'
 
 const vehicleStore = useVehicleStore()
 const maintenanceStore = useMaintenanceStore()
@@ -31,11 +31,14 @@ const activeVehicle = computed(() => vehicleStore.activeVehicle)
 const activeMaintenance = computed(() =>
   maintenanceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 )
-const activeRepairs = computed(() => repairStore.records.filter((record) => record.vehicleId === activeVehicleId.value))
+const activeRepairs = computed(() =>
+  repairStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
+)
 const activeFuel = computed(() => fuelStore.records.filter((record) => record.vehicleId === activeVehicleId.value))
 const activeInsurance = computed(() =>
   insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 )
+const activeInsuranceReminders = computed(() => getInsuranceReminders(activeInsurance.value))
 
 function getRecordCost(record: { cost?: number; amount?: number }) {
   return record.cost ?? record.amount ?? 0
@@ -61,7 +64,7 @@ const latestRepair = computed(() => activeRepairs.value[0] ?? null)
 const nearestInsurance = computed(() => getNearestInsurance(activeInsurance.value))
 const heroReminder = computed(() => reminderStore.activeVehicleSummaries[0] ?? null)
 const heroVehicleTitle = computed(() =>
-  activeVehicle.value ? `${activeVehicle.value.brand} ${activeVehicle.value.model}` : '尚未設定主要車輛',
+  activeVehicle.value ? `${activeVehicle.value.brand} ${activeVehicle.value.model}` : '請先新增並選擇車輛',
 )
 
 const statCards = computed(() => [
@@ -70,11 +73,11 @@ const statCards = computed(() => [
     value: activeVehicle.value ? `${formatNumber(activeVehicle.value.currentMileage)} km` : '-',
   },
   {
-    label: '本月花費',
+    label: '本月支出',
     value: formatCurrency(monthCost.value),
   },
   {
-    label: '年度花費',
+    label: '年度支出',
     value: formatCurrency(yearCost.value),
   },
   {
@@ -84,12 +87,12 @@ const statCards = computed(() => [
       : '尚無資料',
   },
   {
-    label: '最近一次保養',
-    value: latestMaintenance.value ? `${latestMaintenance.value.item} / ${formatDate(latestMaintenance.value.date)}` : '尚未建立',
+    label: '最近保養',
+    value: latestMaintenance.value ? `${latestMaintenance.value.item} / ${formatDate(latestMaintenance.value.date)}` : '尚無紀錄',
   },
   {
-    label: '保險狀態',
-    value: nearestInsurance.value ? `${nearestInsurance.value.insuranceType} / ${getInsuranceStatusLabel(nearestInsurance.value)}` : '尚未建立',
+    label: '最近到期保險',
+    value: nearestInsurance.value ? `${nearestInsurance.value.insuranceType} / ${getInsuranceStatusLabel(nearestInsurance.value)}` : '尚無紀錄',
   },
 ])
 
@@ -110,21 +113,21 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Dashboard</h1>
-        <p>以車輛為中心整合保養、維修、能源與保險資訊，手機上也能快速掌握狀態。</p>
+        <p>集中查看目前車輛的里程、支出、保養提醒與完整保險狀態。</p>
       </div>
     </div>
 
     <section class="hero-card dark-surface">
       <div class="hero-card__content">
         <div class="hero-card__summary">
-          <p class="eyebrow">我的車輛</p>
+          <p class="eyebrow">主要車輛</p>
           <div class="hero-card__type-row">
             <span class="hero-card__type-icon">{{ getVehicleTypeIcon(activeVehicle?.vehicleType) }}</span>
             <span class="hero-card__type-label">{{ getVehicleTypeLabel(activeVehicle?.vehicleType) }}</span>
           </div>
           <h2>{{ heroVehicleTitle }}</h2>
           <p class="hero-card__plate">
-            {{ activeVehicle?.plateNumber ?? '先到車輛管理新增一台車，並設定為主要車輛。' }}
+            {{ activeVehicle?.plateNumber ?? '新增車輛後即可在這裡看到車牌與主視覺資訊。' }}
           </p>
 
           <div class="hero-card__media mobile-only">
@@ -144,9 +147,9 @@ onMounted(async () => {
               <small>km</small>
             </div>
             <div class="hero-stat hero-stat--soft">
-              <span>下一個提醒</span>
-              <strong>{{ heroReminder ? heroReminder.item : '尚未建立' }}</strong>
-              <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立提醒規則後會顯示' }}</small>
+              <span>最近提醒</span>
+              <strong>{{ heroReminder ? heroReminder.item : '尚無紀錄' }}</strong>
+              <small>{{ heroReminder ? `${formatNumber(heroReminder.remainingKm)} km` : '建立保養規則後會顯示提醒' }}</small>
             </div>
           </div>
         </div>
@@ -165,12 +168,12 @@ onMounted(async () => {
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Expense Overview</p>
-            <h3>支出概覽</h3>
+            <h3>近期支出摘要</h3>
           </div>
         </div>
         <div class="section-stack">
           <div class="insight-line">
-            <p class="metric-label">最近一次保養</p>
+            <p class="metric-label">最近保養</p>
             <div class="record-line">
               <strong>{{ latestMaintenance ? latestMaintenance.item : '尚無資料' }}</strong>
               <span class="muted">
@@ -179,7 +182,7 @@ onMounted(async () => {
             </div>
           </div>
           <div class="insight-line">
-            <p class="metric-label">最近一次維修</p>
+            <p class="metric-label">最近維修</p>
             <div class="record-line">
               <strong>{{ latestRepair ? latestRepair.problem : '尚無資料' }}</strong>
               <span class="muted">
@@ -197,19 +200,25 @@ onMounted(async () => {
             <h3>保險狀態</h3>
           </div>
         </div>
-        <div v-if="nearestInsurance" class="insurance-card" :class="`insurance-card--${nearestInsurance.status}`">
-          <p class="metric-label">保險狀態</p>
-          <strong>{{ nearestInsurance.insuranceType }}</strong>
-          <span>{{ nearestInsurance.companyName }}</span>
-          <span>到期日：{{ formatDate(nearestInsurance.endDate) }}</span>
-          <span>
-            {{ nearestInsurance.remainingDays >= 0 ? `剩餘 ${nearestInsurance.remainingDays} 天` : `已過期 ${Math.abs(nearestInsurance.remainingDays)} 天` }}
-          </span>
-          <el-tag :type="nearestInsurance.status === 'overdue' ? 'danger' : nearestInsurance.status === 'warning' ? 'warning' : 'success'" round>
-            狀態：{{ getInsuranceStatusLabel(nearestInsurance) }}
-          </el-tag>
+        <div v-if="activeInsuranceReminders.length" class="insurance-stack">
+          <div
+            v-for="insurance in activeInsuranceReminders"
+            :key="insurance.id"
+            class="insurance-card"
+            :class="`insurance-card--${insurance.status}`"
+          >
+            <p class="metric-label">{{ insurance.insuranceType }}</p>
+            <strong>{{ insurance.companyName }}</strong>
+            <span>到期日：{{ formatDate(insurance.endDate) }}</span>
+            <span>
+              {{ insurance.remainingDays >= 0 ? `剩餘 ${insurance.remainingDays} 天` : `已過期 ${Math.abs(insurance.remainingDays)} 天` }}
+            </span>
+            <el-tag :type="insurance.status === 'overdue' ? 'danger' : insurance.status === 'warning' ? 'warning' : 'success'" round>
+              狀態：{{ getInsuranceStatusLabel(insurance) }}
+            </el-tag>
+          </div>
         </div>
-        <el-empty v-else description="尚未建立保險資料" />
+        <el-empty v-else description="尚無保險資料" />
       </section>
 
       <section class="soft-panel dashboard-panel">
@@ -222,7 +231,7 @@ onMounted(async () => {
         <div v-if="reminderStore.activeVehicleSummaries.length" class="reminder-stack">
           <ReminderCard v-for="reminder in reminderStore.activeVehicleSummaries.slice(0, 3)" :key="reminder.id" :reminder="reminder" />
         </div>
-        <el-empty v-else description="新增車輛後，再設定保養提醒規則" />
+        <el-empty v-else description="目前車輛尚未建立保養提醒規則" />
       </section>
     </div>
   </section>
@@ -337,6 +346,12 @@ onMounted(async () => {
   background: #f8fafc;
 }
 
+.insurance-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .insurance-card {
   display: flex;
   flex-direction: column;
@@ -347,8 +362,8 @@ onMounted(async () => {
 }
 
 .insurance-card strong {
-  font-size: 28px;
-  line-height: 1.05;
+  font-size: 24px;
+  line-height: 1.1;
 }
 
 .insurance-card span {
