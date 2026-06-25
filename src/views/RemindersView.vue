@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ReminderCard from '@/components/ReminderCard.vue'
 import { getMaintenanceItemsByVehicleType } from '@/constants/vehicles'
 import { useReminderStore } from '@/stores/reminderStore'
+import type { ReminderStatus } from '@/types/common'
 import { useVehicleStore } from '@/stores/vehicleStore'
-import type { MaintenanceRule, MaintenanceRuleInput } from '@/types/reminder'
+import type { MaintenanceRule, MaintenanceRuleInput, ReminderSummary } from '@/types/reminder'
 
 const reminderStore = useReminderStore()
 const vehicleStore = useVehicleStore()
 const dialogVisible = ref(false)
 const editingRule = ref<MaintenanceRule | null>(null)
+const selectedVehicleId = ref('')
 
 const form = reactive<MaintenanceRuleInput>({
   vehicleId: '',
@@ -21,15 +23,48 @@ const form = reactive<MaintenanceRuleInput>({
   isEnabled: true,
 })
 
-const currentRules = computed(() => reminderStore.activeVehicleRules)
-const selectedVehicle = computed(() => vehicleStore.vehicles.find((vehicle) => vehicle.id === form.vehicleId) ?? null)
-const itemOptions = computed(() => getMaintenanceItemsByVehicleType(selectedVehicle.value?.vehicleType))
+const filteredVehicle = computed(
+  () => vehicleStore.vehicles.find((vehicle) => vehicle.id === selectedVehicleId.value) ?? null,
+)
+const currentRules = computed(() =>
+  reminderStore.rules.filter((rule) => rule.vehicleId === selectedVehicleId.value),
+)
+const reminderSummaries = computed<ReminderSummary[]>(() => {
+  if (!filteredVehicle.value) return []
+
+  return currentRules.value
+    .filter((rule) => rule.isEnabled)
+    .map((rule) => {
+      const remainingKm = rule.nextMileage - filteredVehicle.value!.currentMileage
+      const status: ReminderStatus = remainingKm < 0 ? 'overdue' : remainingKm <= 300 ? 'warning' : 'normal'
+      return {
+        ...rule,
+        remainingKm,
+        status,
+      }
+    })
+    .sort((a, b) => a.remainingKm - b.remainingKm)
+})
+
+const formVehicle = computed(() => vehicleStore.vehicles.find((vehicle) => vehicle.id === form.vehicleId) ?? null)
+const itemOptions = computed(() => getMaintenanceItemsByVehicleType(formVehicle.value?.vehicleType))
+
+function ensureSelectedVehicle() {
+  const hasSelected = vehicleStore.vehicles.some((vehicle) => vehicle.id === selectedVehicleId.value)
+  if (hasSelected) return
+
+  selectedVehicleId.value = vehicleStore.activeVehicleId ?? vehicleStore.vehicleOptions[0]?.value ?? ''
+}
 
 function resetForm() {
-  form.vehicleId = editingRule.value?.vehicleId ?? vehicleStore.activeVehicleId ?? vehicleStore.vehicleOptions[0]?.value ?? ''
-  form.item = editingRule.value?.item ?? itemOptions.value[0] ?? ''
+  const baseVehicleId = editingRule.value?.vehicleId ?? selectedVehicleId.value ?? vehicleStore.activeVehicleId ?? vehicleStore.vehicleOptions[0]?.value ?? ''
+  const baseVehicle = vehicleStore.vehicles.find((vehicle) => vehicle.id === baseVehicleId) ?? null
+  const baseItemOptions = getMaintenanceItemsByVehicleType(baseVehicle?.vehicleType)
+
+  form.vehicleId = baseVehicleId
+  form.item = editingRule.value?.item ?? baseItemOptions[0] ?? ''
   form.intervalKm = editingRule.value?.intervalKm ?? 1000
-  form.lastMileage = editingRule.value?.lastMileage ?? vehicleStore.activeVehicle?.currentMileage ?? 0
+  form.lastMileage = editingRule.value?.lastMileage ?? baseVehicle?.currentMileage ?? 0
   form.nextMileage = editingRule.value?.nextMileage ?? form.lastMileage + form.intervalKm
   form.isEnabled = editingRule.value?.isEnabled ?? true
 }
@@ -48,7 +83,7 @@ function openEdit(rule: MaintenanceRule) {
 
 async function saveRule() {
   if (!form.vehicleId || !form.item) {
-    ElMessage.warning('請完整填寫車輛與保養項目')
+    ElMessage.warning('請先選擇車輛與保養項目')
     return
   }
 
@@ -59,18 +94,64 @@ async function saveRule() {
     await reminderStore.create({ ...form })
     ElMessage.success('提醒規則已新增')
   }
+
+  ensureSelectedVehicle()
   dialogVisible.value = false
 }
 
 async function removeRule(rule: MaintenanceRule) {
-  await ElMessageBox.confirm(`確定刪除 ${rule.item} 的提醒規則嗎？`, '刪除確認', { type: 'warning' })
+  await ElMessageBox.confirm(`確定要刪除 ${rule.item} 的提醒規則嗎？`, '刪除提醒規則', { type: 'warning' })
   await reminderStore.remove(rule.id)
   ElMessage.success('提醒規則已刪除')
 }
 
+watch(
+  () => [vehicleStore.vehicles, vehicleStore.activeVehicleId],
+  () => {
+    ensureSelectedVehicle()
+  },
+  { deep: true },
+)
+
+watch(
+  () => form.vehicleId,
+  (vehicleId) => {
+    const vehicle = vehicleStore.vehicles.find((item) => item.id === vehicleId) ?? null
+    const nextItems = getMaintenanceItemsByVehicleType(vehicle?.vehicleType)
+
+    if (!nextItems.includes(form.item)) {
+      form.item = nextItems[0] ?? ''
+    }
+
+    if (!editingRule.value) {
+      form.lastMileage = vehicle?.currentMileage ?? 0
+      form.nextMileage = form.lastMileage + form.intervalKm
+    }
+  },
+)
+
+watch(
+  () => form.intervalKm,
+  (intervalKm) => {
+    if (!editingRule.value) {
+      form.nextMileage = form.lastMileage + intervalKm
+    }
+  },
+)
+
+watch(
+  () => form.lastMileage,
+  (lastMileage) => {
+    if (!editingRule.value) {
+      form.nextMileage = lastMileage + form.intervalKm
+    }
+  },
+)
+
 onMounted(async () => {
   await vehicleStore.fetchAll()
   await reminderStore.fetchAll()
+  ensureSelectedVehicle()
 })
 </script>
 
@@ -79,19 +160,41 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>保養提醒</h1>
-        <p>依照車輛類型設定保養週期，讓 Dashboard 與提醒卡片即時顯示剩餘里程。</p>
+        <p>可切換查看不同車輛的保養提醒與規則，不再只顯示主要車輛。</p>
       </div>
-      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.activeVehicleId" @click="openCreate">新增提醒規則</el-button>
+      <el-button type="warning" class="primary-cta" :disabled="!vehicleStore.vehicles.length" @click="openCreate">
+        新增提醒規則
+      </el-button>
     </div>
 
-    <div v-if="!vehicleStore.activeVehicleId">
-      <el-empty description="請先新增車輛並設定主要車輛" />
+    <div v-if="!vehicleStore.vehicles.length">
+      <el-empty description="請先新增車輛，才能建立保養提醒。" />
     </div>
 
     <div v-else class="section-stack">
-      <div class="grid-cards reminder-grid">
-        <ReminderCard v-for="reminder in reminderStore.activeVehicleSummaries" :key="reminder.id" :reminder="reminder" />
+      <div class="toolbar">
+        <el-select v-model="selectedVehicleId" placeholder="選擇要查看的車輛">
+          <el-option
+            v-for="option in vehicleStore.vehicleOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
       </div>
+
+      <div class="soft-panel vehicle-filter-card">
+        <p class="eyebrow">目前檢視</p>
+        <h3>{{ filteredVehicle ? `${filteredVehicle.brand} ${filteredVehicle.model}` : '未選擇車輛' }}</h3>
+        <p class="muted">
+          {{ filteredVehicle ? `${filteredVehicle.plateNumber} · 目前里程 ${filteredVehicle.currentMileage.toLocaleString('zh-TW')} km` : '請選擇一台車輛查看提醒資訊。' }}
+        </p>
+      </div>
+
+      <div v-if="reminderSummaries.length" class="grid-cards reminder-grid">
+        <ReminderCard v-for="reminder in reminderSummaries" :key="reminder.id" :reminder="reminder" />
+      </div>
+      <el-empty v-else description="這台車輛目前沒有啟用中的保養提醒。" />
 
       <el-table :data="currentRules" class="glass-card desktop-table" stripe>
         <el-table-column label="項目" prop="item" min-width="120" />
@@ -116,7 +219,12 @@ onMounted(async () => {
       <el-form label-position="top">
         <el-form-item label="車輛">
           <el-select v-model="form.vehicleId">
-            <el-option v-for="option in vehicleStore.vehicleOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option
+              v-for="option in vehicleStore.vehicleOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="保養項目">
@@ -152,6 +260,19 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.vehicle-filter-card {
+  padding: 18px;
+}
+
+.vehicle-filter-card h3 {
+  margin: 8px 0 0;
+  font-size: 24px;
+}
+
+.vehicle-filter-card p {
+  margin: 6px 0 0;
+}
+
 @media (min-width: 961px) {
   .reminder-grid {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
