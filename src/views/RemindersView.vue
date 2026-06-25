@@ -89,7 +89,7 @@ onMounted(async () => {
     </div>
 
     <div v-else class="section-stack">
-      <div class="grid-cards">
+      <div class="grid-cards reminder-grid">
         <ReminderCard v-for="reminder in reminderStore.activeVehicleSummaries" :key="reminder.id" :reminder="reminder" />
       </div>
 
@@ -150,3 +150,12 @@ onMounted(async () => {
     </el-dialog>
   </section>
 </template>
+
+<style scoped>
+@media (min-width: 961px) {
+  .reminder-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    align-items: start;
+  }
+}
+</style>
