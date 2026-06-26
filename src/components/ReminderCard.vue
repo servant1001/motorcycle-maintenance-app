@@ -41,7 +41,7 @@ const statusLabel = computed(() => {
       <div class="status-ring" :style="{ '--ring-color': ringColor, '--progress': progress }">
         <div class="status-ring__inner">
           <div>
-            <div class="status-ring__value">{{ Math.abs(reminder.remainingKm) }}</div>
+            <div class="status-ring__value">{{ Math.floor(Math.abs(reminder.remainingKm)) }}</div>
             <div class="status-ring__label">km</div>
           </div>
         </div>

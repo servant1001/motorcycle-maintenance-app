@@ -12,7 +12,7 @@ import { fetchGasMarketSnapshot, type GasMarketSnapshot } from '@/services/gasPr
 import { useFuelStore } from '@/stores/fuelStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
 import type { FuelInput, FuelRecord } from '@/types/fuel'
-import { getAverageFuelEfficiency, getFuelInsights } from '@/utils/fuel'
+import { getAverageFuelEfficiency, getCumulativeFuelEfficiency, getFuelInsights } from '@/utils/fuel'
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format'
 
 const fuelStore = useFuelStore()
@@ -40,6 +40,7 @@ const vehicleNameMap = computed(
 
 const insights = computed(() => getFuelInsights(filteredRecords.value))
 const averageEfficiency = computed(() => getAverageFuelEfficiency(filteredRecords.value))
+const cumulativeEfficiency = computed(() => getCumulativeFuelEfficiency(filteredRecords.value))
 const pageTitle = computed(() => getEnergyRecordLabel(selectedVehicle.value?.vehicleType))
 const addActionLabel = computed(() => getEnergyActionLabel(selectedVehicle.value?.vehicleType))
 const efficiencyLabel = computed(() => getEnergyEfficiencyLabel(selectedVehicle.value?.vehicleType))
@@ -136,6 +137,9 @@ onMounted(async () => {
       </el-select>
       <el-tag v-if="averageEfficiency" type="success" effect="light">
         平均效率 {{ formatNumber(averageEfficiency, 1) }} {{ efficiencyLabel }}
+      </el-tag>
+      <el-tag v-if="cumulativeEfficiency" type="primary" effect="light">
+        累積總平均 {{ formatNumber(cumulativeEfficiency, 1) }} {{ efficiencyLabel }}
       </el-tag>
       <el-radio-group v-model="viewMode" class="view-toggle">
         <el-radio-button label="card">卡片</el-radio-button>
@@ -238,7 +242,7 @@ onMounted(async () => {
 
         <div class="mobile-record-card__meta">
           <div class="metric-chip">
-            <strong>{{ formatNumber(record.liters, 1) }}</strong>
+            <strong>{{ formatNumber(record.liters, 2) }}</strong>
             <span>{{ getRecordUnitLabel(record) }}</span>
           </div>
           <div class="metric-chip">

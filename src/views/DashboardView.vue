@@ -207,8 +207,8 @@ onMounted(async () => {
             class="insurance-card"
             :class="`insurance-card--${insurance.status}`"
           >
-            <p class="metric-label">{{ insurance.insuranceType }}</p>
-            <strong>{{ insurance.companyName }}</strong>
+            <p class="metric-label">{{ insurance.companyName }}</p>
+            <strong>{{ insurance.insuranceType }}</strong>
             <span>到期日：{{ formatDate(insurance.endDate) }}</span>
             <span>
               {{ insurance.remainingDays >= 0 ? `剩餘 ${insurance.remainingDays} 天` : `已過期 ${Math.abs(insurance.remainingDays)} 天` }}

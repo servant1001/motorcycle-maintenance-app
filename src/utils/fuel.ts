@@ -44,3 +44,28 @@ export function getAverageFuelEfficiency(records: FuelRecord[]) {
 
   return samples.reduce((sum, value) => sum + value, 0) / samples.length
 }
+
+export function getCumulativeFuelEfficiency(records: FuelRecord[]) {
+  const sorted = sortByMileage(records)
+  let previousFullRecord: FuelRecord | null = null
+  let totalDistance = 0
+  let totalLiters = 0
+
+  sorted.forEach((record) => {
+    if (record.isFullTank && previousFullRecord) {
+      const distance = record.mileage - previousFullRecord.mileage
+      if (distance > 0 && record.liters > 0) {
+        totalDistance += distance
+        totalLiters += record.liters
+      }
+    }
+
+    if (record.isFullTank) {
+      previousFullRecord = record
+    }
+  })
+
+  if (totalDistance <= 0 || totalLiters <= 0) return null
+
+  return totalDistance / totalLiters
+}

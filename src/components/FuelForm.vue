@@ -119,7 +119,7 @@ async function handleSubmit() {
       <el-row :gutter="12">
         <el-col :xs="24" :sm="12">
           <el-form-item :label="getEnergyUnitLabel(currentVehicle?.vehicleType)" prop="liters">
-            <el-input-number v-model="form.liters" :min="0" :step="0.1" :precision="1" style="width: 100%" />
+            <el-input-number v-model="form.liters" :min="0" :step="0.01" :precision="2" style="width: 100%" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="12">
