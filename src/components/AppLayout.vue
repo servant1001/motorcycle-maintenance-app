@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AIAssistantFab from '@/components/ai/AIAssistantFab.vue'
 import VehicleImage from '@/components/VehicleImage.vue'
 import { getVehicleTypeIcon, getVehicleTypeLabel } from '@/constants/vehicles'
 import { useAuthStore } from '@/stores/authStore'
@@ -24,7 +25,8 @@ const reminderStore = useReminderStore()
 const drawerOpen = ref(false)
 
 const navigationItems = [
-  { label: '儀錶板', routeName: 'dashboard', icon: 'DataBoard' },
+  { label: '儀表板', routeName: 'dashboard', icon: 'DataBoard' },
+  { label: 'AI 顧問', routeName: 'ai', icon: 'ChatDotRound' },
   { label: '車輛', routeName: 'vehicles', icon: 'Van' },
   { label: '保養', routeName: 'maintenance', icon: 'Tools' },
   { label: '維修', routeName: 'repairs', icon: 'SetUp' },
@@ -35,10 +37,11 @@ const navigationItems = [
 ]
 
 const activeMenu = computed(() => String(route.name ?? 'dashboard'))
-const mobileItems = computed(() => navigationItems.slice(0, 5))
+const mobileItems = computed(() => navigationItems.slice(0, 6))
 
 async function bootstrapData() {
   if (!authStore.user) return
+
   await Promise.all([
     vehicleStore.fetchAll(),
     maintenanceStore.fetchAll(),
@@ -46,6 +49,7 @@ async function bootstrapData() {
     fuelStore.fetchAll(),
     insuranceStore.fetchAll(),
   ])
+
   await reminderStore.fetchAll()
 }
 
@@ -91,10 +95,10 @@ onMounted(async () => {
         <div class="sidebar-footer__image-wrap">
           <VehicleImage :src="vehicleStore.activeVehicle?.imageUrl" :alt="vehicleStore.activeVehicle?.model" variant="card" />
         </div>
-        <p class="eyebrow">主要車輛</p>
-        <strong>{{ vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未選擇' }}</strong>
+        <p class="eyebrow">目前車輛</p>
+        <strong>{{ vehicleStore.activeVehicle ? `${vehicleStore.activeVehicle.brand} ${vehicleStore.activeVehicle.model}` : '尚未選擇車輛' }}</strong>
         <span class="muted">
-          {{ vehicleStore.activeVehicle ? `${getVehicleTypeIcon(vehicleStore.activeVehicle.vehicleType)} ${getVehicleTypeLabel(vehicleStore.activeVehicle.vehicleType)} · ${vehicleStore.activeVehicle.plateNumber}` : '到車輛管理設定主要車輛' }}
+          {{ vehicleStore.activeVehicle ? `${getVehicleTypeIcon(vehicleStore.activeVehicle.vehicleType)} ${getVehicleTypeLabel(vehicleStore.activeVehicle.vehicleType)} · ${vehicleStore.activeVehicle.plateNumber}` : '新增車輛後即可在這裡查看主要車輛資訊。' }}
         </span>
       </div>
     </aside>
@@ -108,7 +112,7 @@ onMounted(async () => {
           <div>
             <p class="eyebrow">DriveOne Mobility Platform</p>
             <h1>{{ authStore.displayName }}</h1>
-            <p class="muted">用更輕鬆的方式管理每一台車輛的保養、維修、能源與保險資訊。</p>
+            <p class="muted">管理車輛、保養、維修、能源、保險與 AI 顧問分析。</p>
           </div>
         </div>
 
@@ -156,6 +160,8 @@ onMounted(async () => {
         <span>{{ item.label }}</span>
       </button>
     </nav>
+
+    <AIAssistantFab />
   </div>
 </template>
 
@@ -284,7 +290,7 @@ onMounted(async () => {
   bottom: 12px;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   padding: 8px;
   border-radius: 26px;

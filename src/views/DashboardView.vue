@@ -112,7 +112,7 @@ onMounted(async () => {
   <section class="page-shell section-stack">
     <div class="page-header">
       <div>
-        <h1>Dashboard</h1>
+        <h1>儀表板</h1>
         <p>集中查看目前車輛的里程、支出、保養提醒與完整保險狀態。</p>
       </div>
     </div>

@@ -99,7 +99,7 @@ async function handleGoogleLogin() {
           <div class="feature-card">
             <el-icon><DataBoard /></el-icon>
             <div>
-              <strong>行動化 Dashboard</strong>
+              <strong>行動化儀表板</strong>
               <span>不是傳統後台，而是更貼近日常使用的車輛管理 App。</span>
             </div>
           </div>

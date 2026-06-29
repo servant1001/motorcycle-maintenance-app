@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import { getFirebaseSetupHint, useAuthStore } from '@/stores/authStore'
 import { pinia } from '@/stores'
+import AIChatView from '@/views/AIChatView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import FuelView from '@/views/FuelView.vue'
 import InsuranceView from '@/views/InsuranceView.vue'
@@ -31,6 +32,7 @@ export const router = createRouter({
       },
       children: [
         { path: '', name: 'dashboard', component: DashboardView },
+        { path: 'ai', name: 'ai', component: AIChatView },
         { path: 'vehicles', name: 'vehicles', component: VehiclesView },
         { path: 'maintenance', name: 'maintenance', component: MaintenanceView },
         { path: 'repairs', name: 'repairs', component: RepairsView },
