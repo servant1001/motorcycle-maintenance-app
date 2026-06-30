@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AIChatWindow from './AIChatWindow.vue'
+import AIFloatingChatWindow from './AIFloatingChatWindow.vue'
 import { getDefaultModelForProvider, getModelOptions, getProviderOptions } from '@/constants/aiModels'
 import { getVehicleTypeIcon, getVehicleTypeLabel } from '@/constants/vehicles'
 import { getStoredAIModel, getStoredAIProvider, setStoredAIModel, setStoredAIProvider } from '@/services/aiPreferences'
@@ -161,7 +161,7 @@ onMounted(() => {
   <div class="ai-fab-layer" :class="{ 'ai-fab-layer--open': visible }">
     <transition name="ai-panel">
       <section v-if="visible" class="ai-fab-panel">
-        <AIChatWindow
+        <AIFloatingChatWindow
           :messages="messages"
           :loading="loading"
           :provider="provider"
@@ -235,6 +235,7 @@ onMounted(() => {
 
 .ai-fab-panel {
   width: min(520px, calc(100vw - 24px));
+  height: min(86vh, 920px);
   max-height: min(86vh, 920px);
   overflow: hidden;
   display: flex;

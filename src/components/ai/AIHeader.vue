@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{
   closable?: boolean
+  iconOnlySettings?: boolean
+  keepInlineOnMobile?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -10,19 +12,25 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <header class="ai-header">
+  <header class="ai-header" :class="{ 'ai-header--inline-mobile': keepInlineOnMobile }">
     <div class="ai-header__hero">
-      <div class="ai-header__badge">AI</div>
       <div>
         <p class="eyebrow">DriveOne AI</p>
         <h3>AI 車輛顧問</h3>
-        <p class="ai-header__copy">智慧保養、維修、保險與花費分析助手</p>
+        <p v-if="!iconOnlySettings" class="ai-header__copy">智慧保養、維修、保險與花費分析助手</p>
       </div>
     </div>
 
-    <div class="ai-header__actions">
-      <button type="button" class="ai-header__settings" @click="emit('settings')">
-        <span class="ai-header__settings-text">
+    <div class="ai-header__actions" :class="{ 'ai-header__actions--inline-mobile': keepInlineOnMobile }">
+      <button
+        type="button"
+        class="ai-header__settings"
+        :class="{ 'ai-header__settings--icon': iconOnlySettings }"
+        :aria-label="iconOnlySettings ? 'AI 設定' : undefined"
+        @click="emit('settings')"
+      >
+        <el-icon><Setting /></el-icon>
+        <span v-if="!iconOnlySettings" class="ai-header__settings-text">
           <strong>AI 設定</strong>
         </span>
       </button>
@@ -96,6 +104,13 @@ const emit = defineEmits<{
   flex-shrink: 0;
 }
 
+.ai-header__settings--icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 14px;
+}
+
 .ai-header__settings-text {
   display: flex;
   align-items: center;
@@ -114,6 +129,17 @@ const emit = defineEmits<{
   .ai-header__actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .ai-header--inline-mobile {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .ai-header__actions--inline-mobile {
+    width: auto;
+    justify-content: flex-end;
+    margin-left: auto;
   }
 
   .ai-header h3 {
