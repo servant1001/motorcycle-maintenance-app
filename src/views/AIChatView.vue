@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import AIChatWindow from '@/components/ai/AIChatWindow.vue'
 import { getDefaultModelForProvider, getModelOptions, getProviderOptions } from '@/constants/aiModels'
+import { getVehicleTypeIcon, getVehicleTypeLabel } from '@/constants/vehicles'
 import { getStoredAIModel, getStoredAIProvider, setStoredAIModel, setStoredAIProvider } from '@/services/aiPreferences'
 import { sendAIChatMessage } from '@/services/aiService'
 import { useFuelStore } from '@/stores/fuelStore'
@@ -29,14 +30,6 @@ const messages = ref<AIMessageItem[]>([
   },
 ])
 
-const quickQuestions = [
-  '我的車最近需要保養什麼？',
-  '保險最近什麼時候到期？',
-  '最近一次維修後還需要注意什麼？',
-  '最近油耗或耗電狀況怎麼樣？',
-  '哪一筆支出最值得優先處理？',
-]
-
 const activeVehicle = computed(() => vehicleStore.activeVehicle)
 const activeVehicleId = computed(() => vehicleStore.activeVehicleId)
 const providerOptions = getProviderOptions()
@@ -49,6 +42,36 @@ const context = computed<AIChatContext>(() => ({
   fuelRecords: fuelStore.records.filter((record) => record.vehicleId === activeVehicleId.value).slice(0, 20),
   insuranceRecords: insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 }))
+
+const heroTitle = computed(() =>
+  context.value.vehicle
+    ? `${getVehicleTypeIcon(context.value.vehicle.vehicleType)} ${context.value.vehicle.brand} ${context.value.vehicle.model}`
+    : '尚未選定車輛',
+)
+const heroSubtitle = computed(() =>
+  context.value.vehicle
+    ? `${getVehicleTypeLabel(context.value.vehicle.vehicleType)} · ${context.value.vehicle.plateNumber}`
+    : '請先選擇主要車輛，AI 才能提供更精準的診斷與建議。',
+)
+const mileageText = computed(() =>
+  context.value.vehicle ? `目前里程 ${context.value.vehicle.currentMileage.toLocaleString('zh-TW')} km` : '尚無車輛資料',
+)
+const healthScore = computed(() => {
+  let score = 96
+  if (!context.value.vehicle) return 0
+  if (context.value.insuranceRecords.length === 0) score -= 8
+  if (context.value.maintenanceRecords.length === 0) score -= 10
+  if (context.value.repairRecords.length > 6) score -= 6
+  return Math.max(62, Math.min(98, score))
+})
+
+const quickActions = [
+  '保養分析',
+  '花費分析',
+  '保險資訊',
+  '最近提醒',
+  '能源效率',
+]
 
 function updateProvider(nextProvider: string) {
   provider.value = nextProvider === 'openrouter' ? 'openrouter' : 'gemini'
@@ -119,89 +142,48 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>DriveOne AI</h1>
-        <p>可切換 Gemini 與 OpenRouter Provider，依目前車輛資料取得保養、維修、保險與能源分析建議。</p>
+        <p>以更貼近產品化的 Tesla / Apple 風格介面，整合車況摘要、健康分數、快捷提問與模型設定。</p>
       </div>
     </div>
 
-    <div class="ai-page-grid">
-      <section class="soft-panel ai-vehicle-panel">
-        <p class="eyebrow">目前車輛</p>
-        <template v-if="activeVehicle">
-          <h3>{{ activeVehicle.brand }} {{ activeVehicle.model }}</h3>
-          <p class="muted">{{ activeVehicle.plateNumber }} · 目前里程 {{ activeVehicle.currentMileage.toLocaleString('zh-TW') }} km</p>
-          <div class="ai-metrics">
-            <div class="metric-chip">
-              <strong>{{ context.maintenanceRecords.length }}</strong>
-              <span>保養紀錄</span>
-            </div>
-            <div class="metric-chip">
-              <strong>{{ context.repairRecords.length }}</strong>
-              <span>維修紀錄</span>
-            </div>
-            <div class="metric-chip">
-              <strong>{{ context.fuelRecords.length }}</strong>
-              <span>能源紀錄</span>
-            </div>
-            <div class="metric-chip">
-              <strong>{{ context.insuranceRecords.length }}</strong>
-              <span>保險資料</span>
-            </div>
-          </div>
-        </template>
-        <el-empty v-else description="請先選定一台車輛，AI 才能依據資料提供建議。" />
-      </section>
-
-      <AIChatWindow
-        :messages="messages"
-        :loading="loading"
-        :quick-questions="quickQuestions"
-        :provider="provider"
-        :model="model"
-        :provider-options="providerOptions"
-        :model-options="modelOptions"
-        @send="ask"
-        @update:provider="updateProvider"
-        @update:model="updateModel"
-      />
-    </div>
+    <AIChatWindow
+      :messages="messages"
+      :loading="loading"
+      :provider="provider"
+      :model="model"
+      :provider-options="providerOptions"
+      :model-options="modelOptions"
+      :hero-title="heroTitle"
+      :hero-subtitle="heroSubtitle"
+      :mileage-text="mileageText"
+      :health-score="healthScore"
+      :maintenance-count="context.maintenanceRecords.length"
+      :repair-count="context.repairRecords.length"
+      :insurance-count="context.insuranceRecords.length"
+      :fuel-count="context.fuelRecords.length"
+      :quick-actions="quickActions"
+      @send="ask"
+      @update:provider="updateProvider"
+      @update:model="updateModel"
+    />
   </section>
 </template>
 
 <style scoped>
-.ai-page-grid {
-  display: grid;
-  gap: 18px;
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.ai-vehicle-panel {
-  padding: 18px;
+.page-header h1 {
+  margin-bottom: 8px;
 }
 
-.ai-vehicle-panel h3 {
-  margin: 8px 0 0;
-  font-size: 28px;
-}
-
-.ai-vehicle-panel p {
-  margin: 8px 0 0;
-}
-
-.ai-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
-}
-
-@media (min-width: 1100px) {
-  .ai-page-grid {
-    grid-template-columns: 320px minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .ai-vehicle-panel {
-    position: sticky;
-    top: 20px;
-  }
+.page-header p {
+  max-width: 720px;
+  color: var(--ds-text-soft);
+  line-height: 1.75;
 }
 </style>
