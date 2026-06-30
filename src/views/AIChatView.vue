@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AIChatWindow from '@/components/ai/AIChatWindow.vue'
+import { getDefaultModelForProvider, getModelOptions, getProviderOptions } from '@/constants/aiModels'
+import { getStoredAIModel, getStoredAIProvider, setStoredAIModel, setStoredAIProvider } from '@/services/aiPreferences'
 import { sendAIChatMessage } from '@/services/aiService'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useRepairStore } from '@/stores/repairStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
-import type { AIChatContext, AIMessageItem } from '@/types/ai'
+import type { AIChatContext, AIMessageItem, AIProvider } from '@/types/ai'
 
 const vehicleStore = useVehicleStore()
 const maintenanceStore = useMaintenanceStore()
@@ -16,25 +18,29 @@ const fuelStore = useFuelStore()
 const insuranceStore = useInsuranceStore()
 
 const loading = ref(false)
+const provider = ref<AIProvider>(getStoredAIProvider())
+const model = ref(getStoredAIModel(provider.value))
 const messages = ref<AIMessageItem[]>([
   {
     id: crypto.randomUUID(),
     role: 'assistant',
-    content: '我是 DriveOne AI 車輛顧問。你可以問我保養、維修、油耗、花費或保險到期相關問題，我會根據目前資料幫你分析。',
+    content: '我是 DriveOne AI 車輛顧問，可以依據你目前選定車輛的里程、保養、維修、能源與保險資料提供建議。',
     createdAt: Date.now(),
   },
 ])
 
 const quickQuestions = [
-  '我的車近期最需要優先處理什麼？',
-  '保險是否快到期？我現在該注意什麼？',
-  '最近保養與維修花費偏高嗎？',
-  '我的平均油耗表現如何？',
-  '有哪些保養項目可能快到了？',
+  '我的車最近需要保養什麼？',
+  '保險最近什麼時候到期？',
+  '最近一次維修後還需要注意什麼？',
+  '最近油耗或耗電狀況怎麼樣？',
+  '哪一筆支出最值得優先處理？',
 ]
 
 const activeVehicle = computed(() => vehicleStore.activeVehicle)
 const activeVehicleId = computed(() => vehicleStore.activeVehicleId)
+const providerOptions = getProviderOptions()
+const modelOptions = computed(() => getModelOptions(provider.value))
 
 const context = computed<AIChatContext>(() => ({
   vehicle: activeVehicle.value,
@@ -43,6 +49,18 @@ const context = computed<AIChatContext>(() => ({
   fuelRecords: fuelStore.records.filter((record) => record.vehicleId === activeVehicleId.value).slice(0, 20),
   insuranceRecords: insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 }))
+
+function updateProvider(nextProvider: string) {
+  provider.value = nextProvider === 'openrouter' ? 'openrouter' : 'gemini'
+  setStoredAIProvider(provider.value)
+  model.value = getDefaultModelForProvider(provider.value)
+  setStoredAIModel(model.value)
+}
+
+function updateModel(nextModel: string) {
+  model.value = nextModel
+  setStoredAIModel(model.value)
+}
 
 async function ask(message: string) {
   messages.value.push({
@@ -56,9 +74,16 @@ async function ask(message: string) {
 
   try {
     const response = await sendAIChatMessage({
+      provider: provider.value,
+      model: model.value,
       message,
       context: context.value,
     })
+
+    provider.value = response.provider
+    model.value = response.model
+    setStoredAIProvider(response.provider)
+    setStoredAIModel(response.model)
 
     messages.value.push({
       id: crypto.randomUUID(),
@@ -70,7 +95,7 @@ async function ask(message: string) {
     messages.value.push({
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: error instanceof Error ? `目前無法取得 AI 回覆：${error.message}` : '目前無法取得 AI 回覆，請稍後再試。',
+      content: error instanceof Error ? `AI 回覆失敗：${error.message}` : 'AI 回覆失敗，請稍後再試。',
       createdAt: Date.now(),
     })
   } finally {
@@ -94,13 +119,13 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>DriveOne AI</h1>
-        <p>針對目前車輛資料進行第一版 AI 顧問對話，提供保養、維修、油耗與保險建議。</p>
+        <p>可切換 Gemini 與 OpenRouter Provider，依目前車輛資料取得保養、維修、保險與能源分析建議。</p>
       </div>
     </div>
 
     <div class="ai-page-grid">
       <section class="soft-panel ai-vehicle-panel">
-        <p class="eyebrow">目前分析車輛</p>
+        <p class="eyebrow">目前車輛</p>
         <template v-if="activeVehicle">
           <h3>{{ activeVehicle.brand }} {{ activeVehicle.model }}</h3>
           <p class="muted">{{ activeVehicle.plateNumber }} · 目前里程 {{ activeVehicle.currentMileage.toLocaleString('zh-TW') }} km</p>
@@ -123,14 +148,20 @@ onMounted(async () => {
             </div>
           </div>
         </template>
-        <el-empty v-else description="請先選擇主要車輛，AI 才能依資料分析。" />
+        <el-empty v-else description="請先選定一台車輛，AI 才能依據資料提供建議。" />
       </section>
 
       <AIChatWindow
         :messages="messages"
         :loading="loading"
         :quick-questions="quickQuestions"
+        :provider="provider"
+        :model="model"
+        :provider-options="providerOptions"
+        :model-options="modelOptions"
         @send="ask"
+        @update:provider="updateProvider"
+        @update:model="updateModel"
       />
     </div>
   </section>

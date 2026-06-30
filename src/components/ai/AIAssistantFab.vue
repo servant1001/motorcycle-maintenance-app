@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AIChatWindow from './AIChatWindow.vue'
+import { getDefaultModelForProvider, getModelOptions, getProviderOptions } from '@/constants/aiModels'
+import { getStoredAIModel, getStoredAIProvider, setStoredAIModel, setStoredAIProvider } from '@/services/aiPreferences'
 import { sendAIChatMessage } from '@/services/aiService'
 import { useFuelStore } from '@/stores/fuelStore'
 import { useInsuranceStore } from '@/stores/insuranceStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useRepairStore } from '@/stores/repairStore'
 import { useVehicleStore } from '@/stores/vehicleStore'
-import type { AIChatContext, AIMessageItem } from '@/types/ai'
+import type { AIChatContext, AIMessageItem, AIProvider } from '@/types/ai'
 
 const vehicleStore = useVehicleStore()
 const maintenanceStore = useMaintenanceStore()
@@ -18,22 +20,26 @@ const insuranceStore = useInsuranceStore()
 const visible = ref(false)
 const loading = ref(false)
 const bootstrapped = ref(false)
+const provider = ref<AIProvider>(getStoredAIProvider())
+const model = ref(getStoredAIModel(provider.value))
 const messages = ref<AIMessageItem[]>([
   {
     id: crypto.randomUUID(),
     role: 'assistant',
-    content: '我是 DriveOne AI 車輛顧問。你可以直接問我保養、維修、油耗、花費或保險問題，我會根據目前車輛資料幫你分析。',
+    content: '我是 DriveOne AI 車輛顧問，可以根據你目前選定車輛的資料提供保養、維修、保險與能源建議。',
     createdAt: Date.now(),
   },
 ])
 
 const quickQuestions = [
-  '我的車近期最需要優先處理什麼？',
-  '保險是否快到期？',
-  '最近油耗表現如何？',
-  '最近保養或維修花費偏高嗎？',
+  '我的車最近需要保養什麼？',
+  '保險最近什麼時候到期？',
+  '最近油耗或耗電表現如何？',
+  '最近一次維修後還有哪些風險？',
 ]
 
+const providerOptions = getProviderOptions()
+const modelOptions = computed(() => getModelOptions(provider.value))
 const activeVehicleId = computed(() => vehicleStore.activeVehicleId)
 const context = computed<AIChatContext>(() => ({
   vehicle: vehicleStore.activeVehicle,
@@ -42,6 +48,18 @@ const context = computed<AIChatContext>(() => ({
   fuelRecords: fuelStore.records.filter((record) => record.vehicleId === activeVehicleId.value).slice(0, 20),
   insuranceRecords: insuranceStore.records.filter((record) => record.vehicleId === activeVehicleId.value),
 }))
+
+function updateProvider(nextProvider: string) {
+  provider.value = nextProvider === 'openrouter' ? 'openrouter' : 'gemini'
+  setStoredAIProvider(provider.value)
+  model.value = getDefaultModelForProvider(provider.value)
+  setStoredAIModel(model.value)
+}
+
+function updateModel(nextModel: string) {
+  model.value = nextModel
+  setStoredAIModel(model.value)
+}
 
 async function ensureData() {
   if (bootstrapped.value) return
@@ -81,9 +99,16 @@ async function ask(message: string) {
 
   try {
     const response = await sendAIChatMessage({
+      provider: provider.value,
+      model: model.value,
       message,
       context: context.value,
     })
+
+    provider.value = response.provider
+    model.value = response.model
+    setStoredAIProvider(response.provider)
+    setStoredAIModel(response.model)
 
     messages.value.push({
       id: crypto.randomUUID(),
@@ -95,7 +120,7 @@ async function ask(message: string) {
     messages.value.push({
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: error instanceof Error ? `目前無法取得 AI 回覆：${error.message}` : '目前無法取得 AI 回覆，請稍後再試。',
+      content: error instanceof Error ? `AI 回覆失敗：${error.message}` : 'AI 回覆失敗，請稍後再試。',
       createdAt: Date.now(),
     })
   } finally {
@@ -115,7 +140,7 @@ onMounted(() => {
         <div class="ai-fab-panel__topbar">
           <div>
             <p class="eyebrow">DriveOne AI</p>
-            <strong>車輛顧問</strong>
+            <strong>AI 車輛顧問</strong>
           </div>
           <el-button circle plain class="secondary-cta" @click="visible = false">
             <el-icon><Close /></el-icon>
@@ -123,21 +148,59 @@ onMounted(() => {
         </div>
 
         <div v-if="!context.vehicle" class="ai-fab-panel__hint soft-panel">
-          <strong>尚未選擇主要車輛</strong>
-          <span class="muted">請先在車輛管理中設定主要車輛，AI 才能依據資料分析。</span>
+          <strong>目前尚未選定車輛</strong>
+          <span class="muted">請先選定一台車輛，AI 才能依照對應資料提供更精準的建議。</span>
         </div>
 
         <div v-else class="ai-fab-panel__vehicle">
-          <span class="eyebrow">目前分析車輛</span>
+          <span class="eyebrow">目前車輛</span>
           <strong>{{ context.vehicle.brand }} {{ context.vehicle.model }}</strong>
           <small>{{ context.vehicle.plateNumber }} · {{ context.vehicle.currentMileage.toLocaleString('zh-TW') }} km</small>
         </div>
+
+        <div class="ai-fab-panel__selectors">
+          <el-select
+            :model-value="provider"
+            size="large"
+            class="ai-fab-panel__select"
+            @update:model-value="updateProvider"
+          >
+            <el-option
+              v-for="option in providerOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+
+          <el-select
+            :model-value="model"
+            size="large"
+            class="ai-fab-panel__select"
+            @update:model-value="updateModel"
+          >
+            <el-option
+              v-for="option in modelOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+        </div>
+
+        <span class="ai-fab-panel__meta muted">Provider: {{ provider }} · Model: {{ model }}</span>
 
         <AIChatWindow
           :messages="messages"
           :loading="loading"
           :quick-questions="quickQuestions"
+          :provider="provider"
+          :model="model"
+          :provider-options="providerOptions"
+          :model-options="modelOptions"
           @send="ask"
+          @update:provider="updateProvider"
+          @update:model="updateModel"
         />
       </section>
     </transition>
@@ -241,6 +304,20 @@ onMounted(() => {
   gap: 4px;
 }
 
+.ai-fab-panel__selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ai-fab-panel__select {
+  width: 100%;
+}
+
+.ai-fab-panel__meta {
+  display: block;
+}
+
 .ai-fab-panel__vehicle small {
   color: var(--ds-text-soft);
 }
@@ -266,6 +343,10 @@ onMounted(() => {
 
   .ai-fab-panel {
     width: 100%;
+  }
+
+  .ai-fab-panel__selectors {
+    grid-template-columns: 1fr;
   }
 
   .ai-fab-button {

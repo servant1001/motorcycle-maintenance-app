@@ -212,6 +212,13 @@ AI 與油價 Cloudflare Worker 專案：
 ### AI Response Strategy
 
 - 一般問題走 Gemini
+- AI 已支援多 Provider：
+  - `gemini`
+  - `openrouter`
+- 前端 Provider / Model 設定位置：
+  - `src/constants/aiModels.ts`
+  - `src/services/aiPreferences.ts`
+  - `src/components/ai/AIChatWindow.vue`
 - 保養類問題優先走 `maintenanceAdvisor.ts` 的規則式短回答
 - `prompt.ts` 只提供摘要資料，不應把所有原始紀錄完整灌進模型
 - `maxOutputTokens` 已提高，避免回答過早截斷
@@ -221,12 +228,14 @@ AI 與油價 Cloudflare Worker 專案：
 Gemini API key 不放在專案檔案內，而是放在 Cloudflare Worker secret：
 
 - Secret 名稱：`GEMINI_API_KEY`
+- Secret 名稱：`OPENROUTER_API_KEY`
 
 手動更新方式：
 
 ```powershell
 cd C:\Users\serva\Desktop\driveone-gas-price-worker
 npx wrangler secret put GEMINI_API_KEY
+npx wrangler secret put OPENROUTER_API_KEY
 npx wrangler secret list
 npm run deploy
 ```
